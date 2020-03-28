@@ -1,0 +1,373 @@
+These are commnonly used "procedures" used for graphics.
+
+Notes:
+      1.  All graphics programs must have at least the following
+          include files:
+                  typedef.sys
+                  graphix.sys
+                  kernel.sys
+           Other useful include files which may be used are:
+                  findworld.hgh
+                  axis.hgh
+                  modpoly.hgh
+                  spline.hgh
+                  bezier.hgh
+                  hatch.hgh
+                  histogrm.hgh
+                  circsegm.hgh
+                  pie.hgh
+          Include files must be entered at top of program and listed in
+          the following order:
+
+                  {$I typedef.sys}
+                  {$I graphix.sys}
+                  {$I kernel.sys}
+                  {$I windows.sys}
+                  {$I findwrld.hgh}           (* include files*)
+                  {$I axis.hgh}
+                  {$I polygon.hgh}
+                  {$I spline.hgh}
+
+      2.  All program beginnings must begin with call to "InitGraphic"
+      and end with "LeaveGraphic"
+
+      3.  You can use input loop to "on-line " vary graph parameters as noted
+          in the following example:
+
+
+                      **************************
+                      EXAMPLE OF USING INPUT LOOP
+
+program Axes;
+
+{$I typedef.sys}                     {these files must be}
+{$I graphix.sys}                     {included and in this order}
+{$I kernel.sys}
+{$I windows.sys}
+{$I axis.hgh}
+
+var
+   xden,yden,lft,top,rt,bot,xaxis,yaxis: integer;
+   c: char;
+
+procedure OneAxisDem(xden,yden,lft,top,rt,bot,xaxis,yaxis:integer);
+
+begin
+  ClearScreen;                        {init screen}
+  SetColorWhite;
+  SetBackground(0);
+
+  DefineHeader(1,'LABELED AXES');    {define the window}
+  SetHeaderOn;
+  DefineWorld(1,-10,10,10,-10);
+  SelectWindow(1);
+  SelectWorld(1);
+
+  DrawBorder;                         {draw it}
+
+  DrawAxis(xden,yden,lft,top,rt,bot,xaxis,yaxis,false);
+end;
+
+
+begin
+
+repeat                   {this begins INPUT LOOP}
+
+writeln('enter xden');
+readln(xden);
+writeln('yden');
+readln(yden);
+writeln('lft');
+readln(lft);               {these are parameters to be varied}
+writeln('top');
+readln(top);
+writeln('rt');
+readln(rt);
+writeln('bot');
+readln(bot);
+writeln('xaxis');
+readln(xaxis);
+writeln('yaxis');
+readln(yaxis);
+
+InitGraphic;                          {initialize the graphics system}
+
+OneAxisDem(xden,yden,lft,top,rt,bot,xaxis,yaxis);
+
+repeat until keypressed;              {wait until a key is pressed}
+
+LeaveGraphic;                         {leave the graphics system}
+
+read(kbd,c);
+
+until c='q';                           {recycle input loop until satisfied
+                                        with parameters}
+
+end.   {of axes program}
+
+                *********************************
+                         PROCEDURES
+
+ GotoXYTurbo(X,Y:integer);
+  begin
+    GotoXY(X,Y);  { This will call Turbo's GotoXY }
+  end;
+
+ GotoXY(X,Y:integer);   { Further calls to GotoXY will call this
+                                   procedure }
+  begin
+    if not GrafModeGlb then GotoXYTurbo(X,Y);
+    XTextGlb:=X;
+    YTextGlb:=Y;
+  end;
+
+ ClrEOLTurbo;
+  begin
+    ClrEOL;  { This will call Turbo's ClrEOL }
+  end;
+
+ ClrEOL;   { Further calls to ClrEOL will call this procedure }
+
+ SetClippingOn;
+  begin
+    ClippingGlb:=true;
+  end;
+
+ SetClippingOff;
+  begin
+    ClippingGlb:=false;
+  end;
+
+ SetMessageOn;
+  begin
+    MessageGlb:=true;
+  end;
+
+ SetMessageOff;
+  begin
+    MessageGlb:=false;
+  end;
+
+ SetHeaderOn;
+  begin
+    HeaderGlb:=true;
+  end;
+
+ SetHeaderOff;
+  begin
+    HeaderGlb:=false;
+  end;
+
+ SetHeaderToTop;
+  begin
+    TopGlb:=true;
+  end;
+
+ SetHeaderToBottom;
+  begin
+    TopGlb:=false;
+  end;
+
+function GetWindow:integer;
+  begin
+    GetWindow:=WindowNdxGlb;
+  end;
+
+function GetColor:integer;
+  begin
+    GetColor:=ColorGlb;
+  end;
+
+function clipping:boolean;
+  begin
+    clipping:=ClippingGlb;
+  end;
+
+function WindowMode:boolean;
+  begin
+    WindowMode:=not DirectModeGlb;
+  end;
+
+ SetScreenAspect(aspect:real);
+  begin
+    if aspect<>0.0 then AspectGlb:=abs(aspect);
+  end;
+
+function GetScreenAspect:real;
+  begin
+    GetScreenAspect:=AspectGlb;
+  end;
+
+ SetAspect(aspect:real);
+  begin
+    if aspect<>0.0 then AspectGlb:=abs(aspect)*AspectFactor;
+  end;
+
+function GetAspect:real;
+  begin
+    GetAspect:=AspectGlb/AspectFactor;
+  end;
+
+ SetLinestyle(ls:integer);
+  var i:integer;
+  const lsa:array [0..4] of byte=($FF,$88,$F8,$E4,$EE);
+
+function GetLinestyle:integer;
+  begin
+    GetLinestyle:=LinestyleGlb;
+  end;
+
+ SetVStep(vs:integer);
+  begin
+    if vs>0 then VStepGlb:=vs;
+  end;
+
+function GetVStep:integer;
+  begin
+    GetVStep:=VStepGlb;
+  end;
+
+ DefineHeader(i:integer;hdr:wrkstring);
+
+ SelectScreen(i:integer);
+
+ DefineWorld(i:integer;
+                      X_1,Y_1,X_2,Y_2:real);
+                      i=index of world
+                      x_1, y_1= coordinates of upper lft vertex
+                      x_2, y_2= coordinates of lower rt vertex
+
+ SelectWorld(i:integer);
+
+ ReDefineWindow(i,X_1,Y_1,X_2,Y_2:integer);
+
+ DefineWindow(i,X_1,Y_1,X_2,Y_2:integer);
+
+function TextLeft(TX,Boundary:integer):integer;
+  var TL:integer;
+
+function TextRight(TX,Boundary:integer):integer;
+  var TR:integer;
+
+function TextUp(TY,Boundary:integer):integer;
+  var TU:integer;
+
+function TextDown(TY,Boundary:integer):integer;
+  var TD:integer;
+
+ DefineTextWindow(i,X1,Y1,X2,Y2,B:integer);
+  begin
+    DefineWindow(i,TextLeft(X1,B),TextUp(Y1,B),TextRight(X2,B),TextDown(Y2,B));
+  end;
+
+ SelectWindow(i:integer);
+
+function WindowX(x:real):integer;
+  begin
+    WindowX:=trunc(AxGlb+BxGlb*x);
+  end;
+
+function WindowY(y:real):integer;
+  begin
+    WindowY:=trunc(AyGlb+ByGlb*y);
+  end;
+
+ ResetWindows;
+  var i:integer;
+
+ ResetWorlds;
+  var i:integer;
+
+function clip(var x1,y1,x2,y2:integer):boolean;
+  var ix1,iy1,ix2,iy2,dummy,X1Loc,X2Loc:integer;
+      ClipLoc:boolean;
+
+ DrawPoint(xr,yr:real);
+  var x,y:integer;
+
+ DrawLine(x1,y1,x2,y2:real);
+  var X1Loc,Y1Loc,X2Loc,Y2Loc:integer;
+
+ DrawLineClipped(x1,y1,x2,y2:integer);
+
+ DrawCrossDiag(x,y,scale:integer);
+
+ DrawDiamond(x,y,scale:integer);
+
+ DrawCircle(X_R,Y_R,xradius:real);
+  var DirectModeLoc:boolean;
+
+ DrawSquareC(x1,y1,x2,y2:integer;
+                        fill:boolean);
+  var i:integer;
+
+ DrawSquare(X1,Y1,X2,Y2:real;
+                     fill:boolean);
+
+ DrawAscii(var x,y:integer;
+                    size,ch:byte);
+  var x1ref,x2ref,xpos,ypos,xstart,ystart,xend,yend,xx,yy: integer;
+      charbyte: byte;
+
+ DrawText(x,y,scale:integer;
+                   txt:wrkstring);
+  var LineStyleLoc,code,AsciiValue,StringLen,i,SymbolScale,SymbolCode:integer;
+      DirectModeLoc:boolean;
+
+ DrawTextW(x,y:real;
+                    scale:integer;
+                    txt:wrkstring);
+
+ DrawBorder;
+  var ClipLoc,DirectModeLoc:boolean;
+      xl1,xl2:integer;
+
+ hardcopy(inverse:boolean;mode:byte); { EPSON }
+  var i,j,top:integer;
+      ColorLoc,PrintByte:byte;
+*
+
+ DrawStraight(x1,x2,y:integer);  { Draw a horizontal line from
+                                            x1,y to x2,y }
+
+ SaveScreen(FileName:wrkstring);
+
+ LoadScreen(FileName:wrkstring);
+
+ SwapScreen;
+
+ CopyScreen;
+
+ InvertScreen;
+*
+
+*
+ spline(A:PlotArray;
+                 N:integer;
+                 X1,XM:real;
+                 var B:PlotArray;
+                 M:integer);
+
+ DrawPolygon(A:PlotArray;
+                      I0,NPoints,Line,Scale,Lines:integer);
+
+ DrawAxis(XDens,YDens,XLeft,YTop,XRight,YBottom,XAxis,YAxis:integer;
+                   Arrows:boolean);
+
+ FindWorld(i:integer;
+                    A:PlotArray;
+                    NPoints:integer;
+                    ScaleX,ScaleY:real);
+
+ RotatePolygonAbout(Var A:PlotArray;
+                             NPoints:integer;
+                             Theta,X0,Y0:real);
+
+ TranslatePolygon(var A:PlotArray;
+                           N:integer;
+                           DeltaX,DeltaY:real);
+
+ ScalePolygon(var A:PlotArray;
+                       N:integer;
+                       ScaleX,ScaleY:real);
+

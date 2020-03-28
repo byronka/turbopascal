@@ -1,0 +1,456 @@
+(***********************************************************)
+(*                                                         *)
+(*                TURBO GRAPHIX version 1.03A              *)
+(*                                                         *)
+(*                   Windowing system for                  *)
+(*                IBM Color/Graphics Adapter               *)
+(*                and Hercules Graphics Card               *)
+(*                  Module version  1.00A                  *)
+(*                                                         *)
+(*                  Copyright (C) 1985 by                  *)
+(*                  BORLAND International                  *)
+(*                                                         *)
+(***********************************************************)
+
+procedure MoveVer(delta:integer;
+                  FillOut:boolean);
+  var direction,outer,FromBase,i,XLen,from,tu:integer;
+
+  procedure MoveVer1(VStep: integer);
+    begin
+      XLen:=X2RefGlb-X1RefGlb+1;
+      if direction=-1 then
+        for i:=Y1RefGlb to Y2RefGlb do
+         begin
+          if i>0 then
+           begin
+            From:=BaseAddress(I);
+            Tu:=BaseAddress(I-VStep);
+            Move(mem[GrafBase:from+X1RefGlb],mem[GrafBase:tu+X1RefGlb],XLen);
+           end;
+         end
+      else
+        for i:=Y2RefGlb downto Y1RefGlb do
+          if i<YMaxGlb then
+           begin
+            From:=BaseAddress(I);
+            Tu:=BaseAddress(I+VStep);
+            Move(mem[GrafBase:from+X1RefGlb],mem[GrafBase:tu+X1RefGlb],XLen);
+           end;
+      if not RamScreenGlb then FillOut:=false;
+      if not FillOut then
+        if direction=-1 then
+          for I:=Y2RefGlb downto Y2RefGlb-VStep+1 do
+            FillChar(mem[GrafBase:BaseAddress(I)+X1RefGlb],XLen,not ColorGlb)
+        else
+          for I:=Y1RefGlb to Y1RefGlb+VStep-1 do
+            FillChar(mem[GrafBase:BaseAddress(I)+X1RefGlb],XLen,not ColorGlb)
+      else
+       begin
+        if GrafBase=HardwareGrafBase then FromBase:=seg(ScreenGlb^)
+        else FromBase:=HardwareGrafBase;
+        if direction=-1 then
+          for I:=Y2RefGlb downto Y2RefGlb-VStep+1 do
+            Move(mem[FromBase:BaseAddress(I)+X1RefGlb],mem[GrafBase:BaseAddress(I)+X1RefGlb],XLen)
+        else
+          for I:=Y1RefGlb to Y1RefGlb+VStep-1 do
+            Move(mem[FromBase:BaseAddress(I)+X1RefGlb],mem[GrafBase:BaseAddress(I)+X1RefGlb],XLen);
+       end;
+      ReDefineWindow(WindowNdxGlb,X1RefGlb,Y1RefGlb+VStep*direction,X2RefGlb,Y2RefGlb+VStep*direction);
+      SelectWindow(WindowNdxGlb);
+    end;
+
+  begin
+    if delta<>0 then
+     begin
+      direction:=1;
+      if delta<0 then direction:=-1;
+      with window[WindowNdxGlb] do
+        if drawn then
+          if top then Y1RefGlb:=Y1RefGlb-HeaderSizeGlb
+          else Y2RefGlb:=Y2RefGlb+HeaderSizeGlb;
+      if (Y1RefGlb+delta < 0) or (Y2RefGlb+delta > YMaxGlb) then Error(23,7)
+      else
+       begin
+        for outer:=1 to abs(delta) div VStepGlb do MoveVer1(VStepGlb);
+        if abs(delta) mod VStepGlb<>0 then MoveVer1(abs(delta) mod VStepGlb);
+       end;
+      with window[WindowNdxGlb] do
+        if drawn then
+          if top then Y1RefGlb:=Y1RefGlb+HeaderSizeGlb
+          else Y2RefGlb:=Y2RefGlb-HeaderSizeGlb;
+     end;
+  end;
+
+procedure MoveHor(delta:integer;
+                  FillOut:boolean);
+  var direction,outer,FromBase,i,XLen,y:integer;
+
+  begin
+    if delta<>0 then
+     begin
+      direction:=1;
+      if delta<0 then direction:=-1;
+      with window[WindowNdxGlb] do
+        if drawn then
+          if top then Y1RefGlb:=Y1RefGlb-HeaderSizeGlb
+          else Y2RefGlb:=Y2RefGlb+HeaderSizeGlb;
+      if (X1RefGlb+delta < 0) or (X2RefGlb+delta > XMaxGlb) then Error(24,7)
+      else
+       begin
+        for outer:=1 to abs(delta) do
+         begin
+          XLen:=X2RefGlb-X1RefGlb+1;
+          for i:=Y1RefGlb to Y2RefGlb do
+           begin
+            Y:=BaseAddress(i);
+            Move(mem[GrafBase:y+X1RefGlb],mem[GrafBase:y+X1RefGlb+direction],XLen);
+            if not RamScreenGlb then FillOut:=false;
+            if not FillOut then
+              if direction<0 then Mem[GrafBase:y+X2RefGlb]:=(not ColorGlb) and $FF
+              else Mem[GrafBase:y+X1RefGlb]:=(not ColorGlb) and $FF   { prevents range check errors }
+            else
+             begin
+              if GrafBase=HardwareGrafBase then FromBase:=seg(ScreenGlb^)
+              else FromBase:=HardwareGrafBase;
+              if direction=-1 then Mem[GrafBase:y+X2RefGlb]:=Mem[FromBase:y+X2RefGlb]
+              else Mem[GrafBase:y+X1RefGlb]:=Mem[FromBase:y+X1RefGlb];
+             end;
+           end;
+          ReDefineWindow(WindowNdxGlb,X1RefGlb+direction,Y1RefGlb,X2RefGlb+direction,Y2RefGlb);
+          SelectWindow(WindowNdxGlb);
+         end;
+       end;
+      with window[WindowNdxGlb] do
+        if drawn then
+          if top then Y1RefGlb:=Y1RefGlb+HeaderSizeGlb
+          else Y2RefGlb:=Y2RefGlb-HeaderSizeGlb;
+     end;
+  end;
+
+procedure CopyWindow(from,tu:byte;
+                     x1,y1:integer);
+  var XLen,YLen:integer;
+      FromBase,ToBase,i:integer;
+
+  begin
+    if (x1<0) or (y1<0) then error(17,3)
+    else
+     begin
+      with window[WindowNdxGlb] do
+        if drawn then
+          if top then Y1RefGlb:=Y1RefGlb-HeaderSizeGlb
+          else Y2RefGlb:=Y2RefGlb+HeaderSizeGlb;
+      if from=2 then FromBase:=seg(ScreenGlb^)
+      else FromBase:=HardwareGrafBase;
+      if tu=2 then ToBase:=seg(ScreenGlb^)
+      else ToBase:=HardwareGrafBase;
+      XLen:=X2RefGlb-X1RefGlb;
+      YLen:=Y2RefGlb-Y1RefGlb;
+      if x1+XLen>XMaxGlb then XLen:=XMaxGlb-x1;
+      if y1+YLen>YMaxGlb then YLen:=YMaxGlb-y1;
+      XLen:=XLen+1;
+      for i:=0 to YLen do
+        Move(mem[FromBase:BaseAddress(Y1RefGlb+i)+X1RefGlb],
+             mem[ToBase:BaseAddress(Y1+i)+x1],XLen);
+      with window[WindowNdxGlb] do
+        if drawn then
+          if top then Y1RefGlb:=Y1RefGlb+HeaderSizeGlb
+          else Y2RefGlb:=Y2RefGlb-HeaderSizeGlb;
+     end;
+  end;
+
+procedure SaveWindow(n:integer;
+                     FileName:wrkstring);
+  type sector=array [0..127] of byte;
+  var i,j,secptr,xlen:integer;
+      W:WindowType;
+      PictureFile:file of sector;
+      sec1:array [0..1] of sector;
+
+  begin
+    W:=window[n];
+    assign(PictureFile,FileName);
+    {$I-} rewrite(PictureFile); {$I+}
+    if IOResult<>0 then Error(25,5)
+    else
+     begin
+      move(w,sec1,sizeof(W));
+      secptr:=sizeof(W);
+      with W do
+       begin
+        if drawn then
+          if top then y1:=y1-HeaderSizeGlb
+          else y2:=y2+HeaderSizeGlb;
+        xlen:=x2-x1+1;
+        for i:=y1 to y2 do
+         begin
+          move(mem[GrafBase:BaseAddress(i)+x1],sec1[0,secptr],xlen);
+          secptr:=secptr+xlen;
+          if secptr>127 then
+           begin
+            Write(PictureFile,sec1[0]);
+            move(sec1[1],sec1[0],128);
+            secptr:=secptr-128;
+           end;
+         end;
+        if secptr<>0 then Write(PictureFile,sec1[0]);
+       end;
+      close(PictureFile);
+     end;
+  end;
+
+procedure LoadWindow(n,xpos,ypos:integer;
+                     FileName:wrkstring);
+  type sector=array [0..127] of byte;
+  var i,secptr,xlen:integer;
+      W:WindowType;
+      PictureFile:file of sector;
+      sec1:array [0..1] of sector;
+      second:boolean;
+
+  begin
+    assign(PictureFile,FileName);
+    {$I-} reset(PictureFile); {$I+}
+    if IOResult<>0 then Error(12,5)
+    else
+     begin
+      Read(PictureFile,sec1[0]);
+      move(sec1,W,sizeof(W));
+      secptr:=sizeof(W);
+      second:=false;
+      window[n]:=W;
+      with W do
+       begin
+        if drawn then
+          if top then y1:=y1-HeaderSizeGlb
+          else y2:=y2+HeaderSizeGlb;
+        xlen:=x2-x1+1;
+        if xpos>=0 then
+         begin
+          x2:=xpos+x2-x1;
+          x1:=xpos;
+         end;
+        if ypos>=0 then
+         begin
+          y2:=ypos+y2-y1;
+          y1:=ypos;
+         end;
+        if (x1<0) or (y1<0) or (x2>XMaxGlb) or (y2>YMaxGlb) then error(12,3)
+        else
+         begin
+          for i:=y1 to y2 do
+           begin
+            if (secptr+xlen>127) and not second and not eof(PictureFile) then
+             begin
+              Read(PictureFile,sec1[1]);
+              second:=true;
+             end;
+            move(sec1[0,secptr],mem[GrafBase:BaseAddress(i)+x1],xlen);
+            secptr:=secptr+xlen;
+            if secptr>127 then
+             begin
+              move(sec1[1],sec1[0],128);
+              secptr:=secptr-128;
+              second:=false;
+             end;
+           end;
+         end;
+       end;
+      close(PictureFile);
+     end;
+  end;
+
+function WindowSize(win:integer):integer;
+  var
+    WS: integer;
+
+  begin
+    WS:=-1;
+    if not (win in [1..MaxWindowsGlb]) then error(13,2)
+    else with window[win] do
+     begin
+      WS:=(y2-y1+1)*(x2-x1+1);
+      if Drawn then WS:=WS+HeaderSizeGlb*(x2-x1+1);
+      WS:=(WS+$03FF) And $FC00;
+     end;
+    WindowSize:=WS;
+  end;
+
+procedure ClearWindowStack(win:integer);
+  begin
+    if not (win in [1..MaxWindowsGlb]) then error(14,2)
+    else with stack[win],W do
+     begin
+      if (Contents<>Nil) then freemem(Contents,Size);
+      Contents:=nil;
+      Size:=0;
+     end;
+  end;
+
+procedure StoreWindow(win:integer);
+  var i,XLen,y,y0,y9,A:integer;
+      m:real;
+
+  begin
+    if not (win in [1..MaxWindowsGlb]) then error(15,2)
+    else
+     begin
+      if stack[win].Contents<>Nil then ClearWindowStack(win);
+      m:=maxavail;
+      if m<0 then m:=m+65536.0;
+      if WindowSize(win)>16.0*m then error(15,6)
+      else
+        with stack[win],W do
+         begin
+          W:=window[win];
+          Size:=WindowSize(win);
+          getmem(Contents,Size);
+          with W do
+           begin
+            y0:=y1;
+            y9:=y2;
+            if drawn then
+              if top then y0:=y0-HeaderSizeGlb
+              else y9:=y9+HeaderSizeGlb;
+            XLen:=x2-x1+1;
+            A:=0;
+            for i:=y0 to y9 do
+             begin
+              Y:=BaseAddress(I);
+              Move(mem[GrafBase:y+x1],mem[seg(Contents^):ofs(Contents^)+A],XLen);
+              A:=A+XLen;
+             end;
+           end;
+         end;
+     end;
+  end;
+
+procedure RestoreWindow(win,DeltaX,DeltaY:integer);
+  var i,XLen,y,y0,y9,A:integer;
+      w1:WindowType;
+  begin
+    if not (win in [1..MaxWindowsGlb]) then error(16,2)
+    else with stack[abs(win)] do
+     begin
+      W1:=W;
+      if Contents=Nil then error(16,2)
+      else with W1 do
+       begin
+        x1:=x1+DeltaX;
+        x2:=x2+DeltaX;
+        y1:=y1+DeltaY;
+        y2:=y2+DeltaY;
+        if (X1>=0) and (X1<=XMaxGlb) and (X2>=0) and (X2<=XMaxGlb) and
+           (Y1>=0) and (Y1<=YMaxGlb) and (Y2>=0) and (Y2<=YMaxGlb) then
+         begin
+          XLen:=X2-X1+1;
+          A:=0;
+          y0:=y1;
+          y9:=y2;
+          if drawn then
+            if top then y0:=y0-HeaderSizeGlb
+            else y9:=y9+HeaderSizeGlb;
+          for i:=y0 to y9 do
+           begin
+            Y:=BaseAddress(i);
+            with stack[win] do
+              Move(mem[seg(Contents^):ofs(Contents^)+A],mem[GrafBase:y+X1],XLen);
+            A:=A+XLen;
+           end;
+          window[win]:=W1;
+          if win<0 then ClearWindowStack(abs(win));
+          if win=WindowNdxGlb then SelectWindow(win);
+         end
+        else error(16,3);
+       end;
+     end
+  end;
+
+procedure SaveWindowStack(FileName:wrkstring);
+  var WindowFile:file;
+      PointerFile:file of WindowType;
+      i:integer;
+
+  begin
+    assign(WindowFile,FileName+'.stk');
+    {$I-} rewrite(WindowFile); {$I+}
+    if IOResult<>0 then Error(26,5)
+    else
+     begin
+      for i:=1 to MaxWindowsGlb do
+        with stack[i],W do
+          if Contents<>Nil then
+            blockwrite(WindowFile,Contents^,Size Shr 7);
+      close(WindowFile);
+      assign(PointerFile,FileName+'.ptr');
+      {$I-} rewrite(PointerFile); {$I+}
+      if IOResult<>0 then Error(26,5)
+      else
+       begin
+        for i:=1 to MaxWindowsGlb do
+          write(PointerFile,stack[i].W);
+        close(PointerFile);
+       end;
+     end;
+  end;
+
+procedure LoadWindowStack(FileName:wrkstring);
+  var WindowFile:file;
+      PointerFile:file of WindowType;
+      i,WS:integer;
+  begin
+    assign(PointerFile,FileName+'.ptr');
+    {$I-} reset(PointerFile); {$I+}
+    if IOResult=0 then
+     begin
+      for i:=1 to MaxWindowsGlb do
+        read(PointerFile,stack[i].W);
+      close(PointerFile);
+      assign(WindowFile,FileName+'.stk');
+      {$I-} reset(WindowFile); {$I+}
+      if IOResult=0 then
+       begin
+        for i:=1 to MaxWindowsGlb do
+          with stack[i],W do
+            if Size<>0 then
+             begin
+              getmem(Contents,Size);
+              blockread(WindowFile,Contents^,Size Shr 7);
+             end
+            else Contents:=nil;
+        close(WindowFile);
+       end
+      else error(21,5);
+     end
+    else error(21,5);
+  end;
+
+procedure ResetWindowStack;
+  var i:integer;
+
+  begin
+    for i:=1 to MaxWindowsGlb do ClearWindowStack(i);
+  end;
+
+procedure InvertWindow;
+  var i,j,b:integer;
+
+  begin
+    with window[WindowNdxGlb] do
+      if drawn then
+        if top then Y1RefGlb:=Y1RefGlb-HeaderSizeGlb
+        else Y2RefGlb:=Y2RefGlb+HeaderSizeGlb;
+    for i:=Y1RefGlb to Y2RefGlb do
+     begin
+      b:=BaseAddress(I);
+      Inline($8B/$86/ b /$8B/$1E/ X1RefGlb /$8B/$0E/ X2RefGlb /$8B/$16/
+             GrafBase /$1E/$8E/$DA/$29/$D9/$41/$01/$C3/$F6/$17/$43/$E2/$FB/
+             $1F);
+     end;
+    with window[WindowNdxGlb] do
+      if drawn then
+        if top then Y1RefGlb:=Y1RefGlb+HeaderSizeGlb
+        else Y2RefGlb:=Y2RefGlb-HeaderSizeGlb;
+  end;
+

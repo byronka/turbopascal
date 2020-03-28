@@ -1,0 +1,39 @@
+program textfile;  {5-28-89}
+
+(* demo used of textfiles...also see RECORDS.PAS *)
+
+var
+   data    : text;  {Note that we do not req "file of ..."}
+   line    : string[255];
+   MaxN, n : integer;
+   filespec: string[30];
+
+begin
+     clrscr;
+     writeln('enter max number of data inputs');
+     readln(MaxN);
+     writeln;
+     writeln('enter filespec for text file');
+     readln(filespec);
+     clrscr;
+     assign(data, filespec);
+     rewrite(data);
+     for n:=1 to MaxN do begin
+         writeln('enter #',n, ' data');
+         readln(line);
+         writeln(data,line);
+     end;
+     close(data);
+     writeln;
+     writeln('Data entered into file, ',filespec);
+     n:=1;
+     line:='';
+     reset(data);
+     while not eof(data) do begin
+         readln(data,line);
+         writeln(n,'  ',line);
+         n:=n + 1;
+     end;
+     close(data);
+end.
+

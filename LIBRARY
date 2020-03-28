@@ -1,0 +1,6 @@
+**************** PROCEDURES WHICH MAY BE CALLED INTO PROGRAMS ***************
+
+INPUT   .PRC      Inputs into specified file
+OUTPUT  .PRC      Reads from specified file
+APPEND  .PRC      Appends data to end of file
+WORDWRAP.PRC      Allows word wrap for text

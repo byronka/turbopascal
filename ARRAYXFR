@@ -1,0 +1,85 @@
+program arrays;  {12-14-87}
+
+(* This procedure demonstrates technique of transferring data from a root
+   array into other arrays.  Note that an array name (e.g. "a" ) can be
+   handled just as though it were a simple variable *)
+
+
+type
+    arrays = array[1..4] of real;
+var
+   sub,root,aa,bb,cc,dd,ee,ff : arrays;
+   select,i,j,k,l,m,n,ok: integer;
+   ch,a,b,c,d,e,f : char;
+
+
+procedure copy;
+   begin
+       clrscr;
+       writeln('identify the target array (e.g., "a".."f") for copying from the root array');
+       read(kbd,ch);
+           case(ch) of
+                        'a': aa := root;
+                        'b': bb := root;
+                        'c': cc := root;
+                        'd': dd := root;
+                        'e': ee := root;
+                        'f': ff := root;
+           end;
+   end;
+
+procedure RootArray;
+   begin
+    clrscr;
+    for n:=1 to 4 do begin   {enter data into root array}
+           writeln('enter data into array item ',n);
+           readln(root[n]);
+       end;
+       for n:=1 to 4 do begin    {these are data entered into root array}
+           writeln('root[',n,'] = ',root[n]);
+       end;
+   end;
+
+procedure readout;
+   begin
+       clrscr;
+       writeln('which array (e.g., "a".."f") do you want to read out? ');
+       read(kbd,ch);
+           case(ch) of
+                        'a': sub:=aa;
+                        'b': sub:=bb;
+                        'c': sub:=cc;
+                        'd': sub:=dd;
+                        'e': sub:=ee;
+                        'f': sub:=ff;
+            end;
+
+       for n:=1 to 4 do begin
+           write(sub[n]);
+           if sub[n] = root[n] then writeln('        check')
+              else writeln('        no check');
+       end;
+    end;
+
+
+begin  {main program}
+       ch:=' ';
+       while ch <> 'q' do begin
+       clrscr;
+       writeln('choose the procedure to be performed');
+       writeln;
+       writeln('i : input data into root array');
+       writeln('c : copy data from root array to target array');
+       writeln('r : readout data from target array');
+          read(kbd,ch);
+          case(ch) of
+                   'i' : RootArray;
+                   'c' : copy;
+                   'r' : readout;
+          end;
+       ch:=' ';
+       gotoxy(1,24);writeln('enter "q" if you wish to quit program .. or any other key to continue');
+       read(kbd,ch);
+       end;
+end.
+

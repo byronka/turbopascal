@@ -1,0 +1,65 @@
+(***********************************************************)
+(*                                                         *)
+(*                TURBO GRAPHIX version 1.03A              *)
+(*                                                         *)
+(*                  Type definition module                 *)
+(*                   Module version 1.00A                  *)
+(*                                                         *)
+(*                  Copyright (C) 1985 by                  *)
+(*                  BORLAND International                  *)
+(*                                                         *)
+(***********************************************************)
+
+const MaxWorldsGlb=4;
+      MaxWindowsGlb=16;
+      MaxPiesGlb=10;
+      MaxPlotGlb=100;
+      StringSizeGlb=80;
+      HeaderSizeGlb=10;
+      RamScreenGlb:boolean=true;
+      CharFile:string[StringSizeGlb]='4x6.fon';
+      MaxProcsGlb=27;
+      MaxErrsGlb=7;
+
+type  wrkstring=string[StringSizeGlb];
+      WorldType=record
+                  x1,y1,x2,y2:real;
+                end;
+      WindowType=record
+                   x1,y1,x2,y2:integer;
+                   header:wrkstring;
+                   drawn,top:boolean;
+                   size:integer;
+                 end;
+      worlds=array [1..MaxWorldsGlb] of WorldType;
+      windows=array [1..MaxWindowsGlb] of WindowType;
+      PlotArray=array [1..MaxPlotGlb,1..2] of real;
+      character=array [1..3] of byte;
+      CharArray=array [32..126] of character;
+      PieType=record
+                area:real;
+                text:wrkstring;
+              end;
+      PieArray=array [1..MaxPiesGlb] of PieType;
+      BackgroundArray=array [0..7] of byte;
+      LineStyleArray=array [0..7] of boolean;
+
+var   X1WldGlb,X2WldGlb,Y1WldGlb,Y2WldGlb,AxGlb,AyGlb,BxGlb,ByGlb:real;
+      X1RefGlb,X2RefGlb,Y1RefGlb,Y2RefGlb:integer;
+      LinestyleGlb,MaxWorldGlb,MaxWindowGlb,WindowNdxGlb:integer;
+      X1Glb,X2Glb,Y1Glb,Y2Glb:integer;
+      XTextGlb,YTextGlb,VStepGlb:integer;
+      PieGlb,DirectModeGlb,ClippingGlb,AxisGlb,HatchGlb:boolean;
+      MessageGlb,BrkGlb,HeaderGlb,TopGlb,GrafModeGlb:boolean;
+      CntGlb,ColorGlb:byte;
+      ErrCodeGlb:byte;
+      LineStyleArrayGlb:LineStyleArray;
+      ErrorProc:array [0..MaxProcsGlb] of ^WrkString;
+      ErrorCode:array [0..MaxErrsGlb] of ^WrkString;
+      PcGlb:string[40];
+      AspectGlb:real;
+      GrafBase:integer;
+      world:worlds;
+      window:windows;
+      CharSet:CharArray;
+

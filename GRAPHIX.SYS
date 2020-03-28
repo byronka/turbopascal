@@ -1,0 +1,370 @@
+(***********************************************************)
+(*                                                         *)
+(*                TURBO GRAPHIX version 1.03A              *)
+(*                                                         *)
+(*      Graphics module for IBM Color/Graphics Adapter     *)
+(*                  Module version  1.01A                  *)
+(*                                                         *)
+(*                  Copyright (C) 1985 by                  *)
+(*                  BORLAND International                  *)
+(*                                                         *)
+(***********************************************************)
+
+const XMaxGlb=79;                   { Number of BYTES -1 in one screen line }
+      XScreenMaxGlb=639;           { Number of PIXELS -1 in one screen line }
+      YMaxGlb=199;                       { Number of lines -1 on the screen }
+      IVStepGlb=2;                              { Initial value of VStepGlb }
+      ScreenSizeGlb=8191;            { Total size in integers of the screen }
+      HardwareGrafBase=$B800;     { Segment location of the hardware screen }
+      FontLoaded:boolean=false;       { Flag: has the font been loaded yet? }
+      MinForeground:integer=0;          { Lowest allowable foreground color }
+      MaxForeground:integer=15;        { Highest allowable foreground color }
+      MinBackground:integer=0;          { Lowest allowable background color }
+      MaxBackground:integer=0;         { Highest allowable background color }
+      AspectFactor=0.44;                   { Aspect ratio for a true circle }
+      SaveStateGlb:integer=10;
+      ForegroundColorGlb:integer=15;
+
+type  ScreenType=array [0..ScreenSizeGlb] of integer;
+      ScreenPointer=^ScreenType;
+      FontChar=array [0..7] of byte;
+      IBMFont=array [0..255] of FontChar;
+      WindowStackRecord=record
+                          W:WindowType;
+                          Contents:ScreenPointer;
+                        end;
+      stacks=array [1..MaxWindowsGlb] of WindowStackRecord;
+
+var   ScreenGlb:ScreenPointer;
+      ConOutPtrSave:integer;
+      Font:IBMFont;
+      Stack:Stacks;
+      DisplayType:(IBMPCjr,IBMCGA,IBMEGA,NoDisplay);
+
+procedure error(ErrProc,ErrCode:integer); forward; { Code in KERNEL.SYS }
+
+function HardwarePresent: boolean;
+  var i,EquipFlag:integer;
+      Info,EGASwitch:byte;
+      HP:boolean;
+      regs:record case integer of
+             1:(ax,bx,cx,dx,bp,si,di,ds,es,flgs:integer);
+             2:(al,ah,bl,bh,cl,ch,dl,dh:byte);
+           end;
+  begin
+    HP:=false;
+    DisplayType:=NoDisplay;
+    with regs do
+     begin
+      intr($11,regs);
+      EquipFlag:=AX;
+      ah:=$12;
+      bl:=$10;
+      intr($10,regs);
+      EGASwitch:=CL;
+      Info:=BH;
+     end;
+    if mem[$F000:$FFFE]=$FD then  { PCjr }
+     begin
+      MinForeground:=0;           { Actually only 0 and 15 are valid }
+      MaxForeground:=15;
+      MinBackground:=0;
+      MaxBackground:=15;
+      DisplayType:=IBMPCjr;
+      HP:=true;
+     end
+    else if ((EquipFlag and 52) in [0,16,32]) and (Info=0) then
+     begin                        { EGA present, active, and in color }
+      MinForeground:=0;
+      MaxForeground:=15;
+      MinBackground:=0;
+      MaxBackground:=15;
+      DisplayType:=IBMEGA;
+      HP:=true;
+     end;
+    if not HP then
+      if ((EquipFlag and 48) in [16,32] { CGA }) or
+         (((EquipFlag and 52)=4 { EGA but not active }) and
+          (EGASwitch in [4,5,10,11]) { EGA is mono, CGA for color }) then
+       begin
+        MinForeground:=0;
+        MaxForeground:=15;
+        MinBackground:=0;
+        MaxBackground:=0;
+        DisplayType:=IBMCGA;
+        HP:=true;
+       end;
+    HardwarePresent:=HP;
+  end;
+
+procedure AllocateRAMScreen;
+  var test:^integer;
+  begin
+    new(ScreenGlb);
+    while ofs(ScreenGlb^)<>0 do   { Make absolutely certain that ScreenGlb }
+     begin                        {  is on a segment (16 byte) boundary! }
+      dispose(ScreenGlb);
+      new(test);
+      new(ScreenGlb);
+     end;
+  end;
+
+function BaseAddress(Y: integer): integer;
+  begin
+    BaseAddress:=(Y and 1) shl 13 + (Y and -2) shl 5 + (Y and -2) shl 3;
+  end;
+
+procedure LeaveGraphic;
+  var regs:record case integer of
+             1:(ax,bx,cx,dx,bp,si,di,ds,es,flgs: integer);
+             2:(al,ah,bl,bh,cl,ch,dl,dh: byte);
+           end;
+  begin
+    regs.ax:=SaveStateGlb;
+    intr($10,regs);
+    if GrafModeGlb then ConOutPtr:=ConOutPtrSave;
+    GrafModeGlb:=false;
+  End;
+
+procedure DC(C: byte);
+  begin
+    inline($8A/$9E/ C /$B7/$00/$D1/$E3/$D1/$E3/$D1/$E3/$81/$C3/ Font /$8A/$16/
+           XTextGlb /$FE/$CA/$B6/$00/$8B/$FA/$8A/$16/ YTextGlb /$4A/$D1/$E2/
+           $D1/$E2/$D1/$E2/$A1/ GrafBase /$8E/$C0/$B5/$08/$B1/$0D/$8B/$C2/$25/
+           $01/$00/$D3/$E0/$8B/$F0/$8B/$C2/$25/$FE/$FF/$B1/$03/$D3/$E0/$03/
+           $F0/$FE/$C9/$D3/$E0/$03/$F0/$03/$F7/$8A/$07/$26/$88/$04/$43/$42/
+           $FE/$CD/$75/$D7);
+  end;
+
+procedure DisplayChar(C: byte);
+  begin
+    if C=8 then
+     begin
+      if XTextGlb>1 then XTextGlb:=XTextGlb-1;
+     end
+    else if C=10 then
+     begin
+      if YTextGlb<25 then YTextGlb:=YTextGlb+1;
+     end
+    else if C=13 then XTextGlb:=1
+    else
+     begin
+      DC(C);
+      if XTextGlb<80 then XTextGlb:=XTextGlb+1;
+     end;
+  end;
+
+procedure SetIBMPalette(PaletteNumber,Color:integer);
+  var regs:record case integer of
+             1:(ax,bx,cx,dx,bp,si,di,ds,es,flgs: integer);
+             2:(al,ah,bl,bh,cl,ch,dl,dh: byte);
+           end;
+  begin
+    with regs do
+     begin
+      if PaletteNumber<>2 then
+       begin
+        ah:=$0B;
+        bl:=Color;
+        bh:=PaletteNumber;
+       end
+      else
+       begin
+        ax:=$1000;
+        bl:=1;
+        bh:=Color;
+       end;
+      intr($10,regs);
+     end;
+  end;
+
+procedure SetForegroundColor(Color: Integer);
+  begin
+    case DisplayType of
+      IBMPCjr: SetIBMPalette(1,1-(Color and 1));
+      IBMCGA:  SetIBMPalette(0,Color);
+      IBMEGA:  SetIBMPalette(2,Color);
+     end;
+    ForegroundColorGlb:=Color;
+  end;
+
+procedure SetBackgroundColor(Color: Integer);
+  begin
+    case DisplayType of
+      IBMPCjr,
+      IBMEGA:  SetIBMPalette(0,Color);
+     end;
+    if DisplayType=IBMEGA then SetIBMPalette(2,ForegroundColorGlb);
+  end;
+
+procedure ClearScreen;
+  begin
+    fillchar(mem[GrafBase:0000],(ScreenSizeGlb+1) Shl 1,0);
+  end;
+
+procedure EnterGraphic;
+  type reg=record case integer of
+             1:(ax,bx,cx,dx,bp,si,di,ds,es,flgs: integer);
+             2:(al,ah,bl,bh,cl,ch,dl,dh: byte);
+           end;
+  var regs:reg;
+      FontFile: file of IBMFont;
+  begin
+    if not FontLoaded then
+     begin
+      Assign(FontFile,'8x8.FON');
+      {$I-} Reset(FontFile); {$I+}
+      if IOResult=0 then
+       begin
+        Read(FontFile,Font);
+        Close(FontFile);
+       end
+      else FillChar(Font,SizeOf(Font),0);
+      FontLoaded:=true;
+     end;
+    regs.ax:=$0f00;
+    intr($10,regs);
+    if (regs.al<4) or (SaveStateGlb=10) then SaveStateGlb:=regs.al;
+    regs.ax:=$0006;
+    intr($10,regs);
+    SetForegroundColor(MaxForeground);
+    if not GrafModeGlb then ConOutPtrSave:=ConOutPtr;
+    ConOutPtr:=ofs(DisplayChar);
+    GrafModeGlb:=true;
+  end;
+
+procedure DP(X,Y: integer);
+  begin
+    inline($B8/$01/$00/$8B/$5E/$04/$21/$D8/$B1/$0D/$D3/$E0/$81/$E3/$FE/$FF/
+           $B1/$03/$D3/$E3/$01/$D8/$B1/$02/$D3/$E3/$01/$D8/$8B/$5E/$06/$89/
+           $DA/$B1/$03/$D3/$EB/$01/$C3/$88/$D1/$80/$E1/$07/$B2/$80/$D2/$EA/
+           $8E/$06/ GrafBase /$80/$3E/ ColorGlb /$FF/$75/$05/$26/$08/$17/$EB/
+           $05/$F6/$D2/$26/$20/$17);
+  end;
+
+function PD(x,y:integer):boolean;
+  begin
+    PD:=(ColorGlb=0) xor (mem[GrafBase:BaseAddress(y) + x shr 3]
+                          and (128 shr (x and 7)) <> 0);
+  end;
+
+procedure SetBackground8(Background:BackgroundArray);
+  var i:integer;
+  begin
+    for i:=Y1RefGlb to Y2RefGlb do
+      FillChar(mem[GrafBase:BaseAddress(i)+X1RefGlb],X2RefGlb-X1RefGlb+1,
+               Background[i and 7]);
+  end;
+
+procedure SetBackground(byt:byte);
+  var bk:BackgroundArray;
+  begin
+    fillchar(bk,8,byt);
+    SetBackground8(bk);
+  end;
+
+procedure DrawStraight(x1,x2,y:integer);  { Draw a horizontal line from
+                                            x1,y to x2,y }
+  var i,x:integer;
+      DirectModeLoc:boolean;
+  begin
+    if (not ((x1<0) or (x1>XMaxGlb shl 3+7)) and not ((x2<0) or
+       (x2>XMaxGlb shl 3+7)) and ((y>=0) and (y<=YMaxGlb))) then
+     begin
+      DirectModeLoc:=DirectModeGlb;
+      DirectModeGlb:=true;
+      if x1>x2 then
+       begin
+        x:=x1;
+        x1:=x2;
+        x2:=x;
+       end;
+      if x2-x1<16 then
+        for x:=x1 to x2 do dp(x,y)
+      else
+       begin
+        x1:=x1+8;
+        for i:=(x1-8) to (x1 and -8) do dp(i,y);
+        for i:=(x2 and -8) to x2 do dp(i,y);
+        FillChar(Mem[GrafBase:BaseAddress(Y)+(X1 Shr 3)],
+                 (X2 Shr 3)-(X1 Shr 3),ColorGlb);
+       end;
+      DirectModeGlb:=DirectModeLoc;
+     end
+  end;
+
+procedure SaveScreen(FileName:wrkstring);
+  type PicFile=file of ScreenType;
+  var picture:ScreenPointer;
+      PictureFile:PicFile;
+      ioerr:boolean;
+  procedure IOCheck;
+  begin
+    ioerr:=IOResult<>0;
+    if ioerr then Error(27,5);
+  end;
+
+  begin
+    ioerr:=false;
+    picture:=ptr(GrafBase,0);
+    assign(PictureFile,FileName);
+    {$I-} rewrite(PictureFile); {$I+}
+    IOCheck;
+    if not ioerr then
+     begin
+      {$I-} write(PictureFile,picture^); {$I+}
+      IOCheck;
+     end;
+    if not ioerr then
+     begin
+      {$I-} close(PictureFile); {$I+}
+      IOCheck;
+     end;
+  end;
+
+procedure LoadScreen(FileName:wrkstring);
+  type PicFile=file of ScreenType;
+  var picture:ScreenPointer;
+      PictureFile:PicFile;
+  begin
+    picture:=ptr(GrafBase,0);
+    assign(PictureFile,FileName);
+    {$I-} reset(PictureFile); {$I+}
+    if IOResult<>0 then Error(11,5)
+    else
+     begin
+      read(PictureFile,picture^);
+      close(PictureFile);
+     end;
+  end;
+
+procedure SwapScreen;
+  const SS=$2000; { ScreenSizeGlb+1 }
+  var g:integer;
+  begin
+    if RamScreenGlb then
+     begin
+      g:=seg(ScreenGlb^);
+      Inline($8B/$86/ g /$8E/$C0/$1E/$B8/ HardwareGrafBase /$8E/$D8/$B9/
+             SS /$31/$DB/$8B/$07/$26/$87/$07/$89/$07/$43/$43/$E2/$F5/$1F);
+     end;
+  end;
+
+procedure CopyScreen;
+  var ToBase:integer;
+  begin
+    if RamScreenGlb then
+     begin
+      if GrafBase=HardwareGrafBase then ToBase:=seg(ScreenGlb^)
+      else ToBase:=HardwareGrafBase;
+      move(mem[GrafBase:0000],mem[ToBase:0000],(ScreenSizeGlb+1) Shl 1);
+     end;
+  end;
+
+procedure InvertScreen;
+  const SS=$2000; { ScreenSizeGlb+1 }
+  begin
+    Inline($1E/$A1/ GrafBase /$8E/$D8/$B9/ SS /$31/$DB/$F7/$17/$43/$43/$E2/
+           $FA/$1F);
+  end;
+

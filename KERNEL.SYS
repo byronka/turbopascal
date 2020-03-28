@@ -1,0 +1,1085 @@
+(***********************************************************)
+(*                                                         *)
+(*                TURBO GRAPHIX version 1.03A              *)
+(*                                                         *)
+(*                  Graphics system kernel                 *)
+(*                   Module version 1.03A                  *)
+(*                                                         *)
+(*                  Copyright (C) 1985 by                  *)
+(*                  BORLAND International                  *)
+(*                                                         *)
+(***********************************************************)
+
+procedure GotoXYTurbo(X,Y:integer);
+  begin
+    GotoXY(X,Y);  { This will call Turbo's GotoXY }
+  end;
+
+procedure GotoXY(X,Y:integer);   { Further calls to GotoXY will call this
+                                   procedure }
+  begin
+    if not GrafModeGlb then GotoXYTurbo(X,Y);
+    XTextGlb:=X;
+    YTextGlb:=Y;
+  end;
+
+procedure ClrEOLTurbo;
+  begin
+    ClrEOL;  { This will call Turbo's ClrEOL }
+  end;
+
+procedure ClrEOL;   { Further calls to ClrEOL will call this procedure }
+  var temp:integer;
+
+  begin
+    if not GrafModeGlb then ClrEOLTurbo
+    else
+     begin
+      temp:=XTextGlb;
+      for XTextGlb:=temp to 80 do DC(32);
+      XTextGlb:=temp;
+     end;
+  end;
+
+procedure error { declared in GRAPHIX.SYS: (ErrProc,ErrCode:integer) };
+  type string2=string[2];
+  var NLevels,PCValue,XLoc,YLoc:integer;
+      ch:char;
+
+  function HexString(byt:byte):string2;
+    const hex:array [0..15] of char='0123456789ABCDEF';
+
+    begin
+      HexString:=hex[byt shr 4] + hex[byt and 15];
+    end;
+
+begin
+  if not (ErrProc in [0..MaxProcsGlb]) then
+   begin
+    LeaveGraphic;
+    writeln('FATAL ERROR 1: illegal procedure number ',ErrProc);
+    halt;
+   end;
+  if not (ErrCode in [0..MaxErrsGlb]) then
+   begin
+    LeaveGraphic;
+    writeln('FATAL ERROR 2: illegal error code ',ErrCode);
+    halt;
+   end;
+  ErrCodeGlb:=ErrCode;
+  if BrkGlb then LeaveGraphic;
+  if MessageGlb or BrkGlb then
+   begin
+    XLoc:=XTextGlb;
+    YLoc:=YTextGlb;
+    GotoXY(1,24);
+    ClrEOL;
+    writeln('Turbo Graphix error #',ErrCode,' in procedure #',ErrProc);
+    if MessageGlb then
+     begin
+      ClrEOL;
+      write('(',ErrorCode[ErrCode]^,' in ',ErrorProc[ErrProc]^,')');
+     end;
+   end;
+  if MessageGlb and BrkGlb then
+   begin
+    WriteLn;
+    WriteLn('Traceback:');
+    NLevels:=0;
+    repeat
+      inline($89/$EB/$8B/$8E/ NLevels /$09/$C9/$74/$05/$8B/$6E/
+             $00/$E2/$FB/$8B/$46/$02/$89/$DD/$89/$86/ PCValue );
+      if PCValue<>0 then
+        writeln(PcGlb,' : ',HexString(hi(PCValue-1)),HexString(lo(PCValue-1)));
+      NLevels:=NLevels+1;
+    until (NLevels>20) or (PCValue=0); { Trace back no more than 20 levels }
+    halt;
+   end
+  else if BrkGlb { and not MessageGlb } then halt
+  else if MessageGlb then
+   begin
+    write('.  Hit enter: ');
+    repeat
+      read(Kbd,Ch);
+    until (Ch=^M) or (Ch=^C);
+    if Ch=^C then
+     begin
+      LeaveGraphic;
+      halt;
+     end;
+    GotoXY(XLoc,YLoc);
+   end;
+end;
+
+procedure SetBreakOff;
+  begin
+    BrkGlb:=false;
+  end;
+
+procedure SetBreakOn;
+  begin
+    BrkGlb:=true;
+  end;
+
+function GetErrorCode:byte;
+  begin
+    GetErrorCode:=ErrCodeGlb;
+    ErrCodeGlb:=0;
+  end;
+
+procedure SetWindowModeOff;
+  begin
+    DirectModeGlb:=true;
+  end;
+
+procedure SetWindowModeOn;
+  begin
+    DirectModeGlb:=false;
+  end;
+
+procedure SetClippingOn;
+  begin
+    ClippingGlb:=true;
+  end;
+
+procedure SetClippingOff;
+  begin
+    ClippingGlb:=false;
+  end;
+
+procedure SetMessageOn;
+  begin
+    MessageGlb:=true;
+  end;
+
+procedure SetMessageOff;
+  begin
+    MessageGlb:=false;
+  end;
+
+procedure SetHeaderOn;
+  begin
+    HeaderGlb:=true;
+  end;
+
+procedure SetHeaderOff;
+  begin
+    HeaderGlb:=false;
+  end;
+
+procedure SetHeaderToTop;
+  begin
+    TopGlb:=true;
+  end;
+
+procedure SetHeaderToBottom;
+  begin
+    TopGlb:=false;
+  end;
+
+procedure RemoveHeader(i:integer);
+  begin
+    if i in [1..MaxWindowsGlb] then
+      with window[i] do
+       begin
+        drawn:=false;
+        top:=true;
+        header:='';
+       end
+    else error(22,2);
+  end;
+
+procedure SetColorWhite;
+  begin
+    ColorGlb:=255;
+  end;
+
+procedure SetColorBlack;
+  begin
+    ColorGlb:=0;
+  end;
+
+function GetWindow:integer;
+  begin
+    GetWindow:=WindowNdxGlb;
+  end;
+
+function GetColor:integer;
+  begin
+    GetColor:=ColorGlb;
+  end;
+
+function clipping:boolean;
+  begin
+    clipping:=ClippingGlb;
+  end;
+
+function WindowMode:boolean;
+  begin
+    WindowMode:=not DirectModeGlb;
+  end;
+
+procedure SetScreenAspect(aspect:real);
+  begin
+    if aspect<>0.0 then AspectGlb:=abs(aspect);
+  end;
+
+function GetScreenAspect:real;
+  begin
+    GetScreenAspect:=AspectGlb;
+  end;
+
+procedure SetAspect(aspect:real);
+  begin
+    if aspect<>0.0 then AspectGlb:=abs(aspect)*AspectFactor;
+  end;
+
+function GetAspect:real;
+  begin
+    GetAspect:=AspectGlb/AspectFactor;
+  end;
+
+procedure SetLinestyle(ls:integer);
+  var i:integer;
+  const lsa:array [0..4] of byte=($FF,$88,$F8,$E4,$EE);
+
+  begin
+    if not (ls in [0..4]) then ls:=ls and $FF + $100;
+    LineStyleGlb:=ls;
+    if ls<5 then ls:=lsa[ls];
+    for i:=0 to 7 do LineStyleArrayGlb[7-i]:=((ls shr i) and 1)<>0;
+    CntGlb:=7;
+  end;
+
+function GetLinestyle:integer;
+  begin
+    GetLinestyle:=LinestyleGlb;
+  end;
+
+procedure SetVStep(vs:integer);
+  begin
+    if vs>0 then VStepGlb:=vs;
+  end;
+
+function GetVStep:integer;
+  begin
+    GetVStep:=VStepGlb;
+  end;
+
+procedure DefineHeader(i:integer;hdr:wrkstring);
+  begin
+    if (i in [1..MaxWindowsGlb]) then window[i].header:=Hdr
+    else error(3,2);
+  end;
+
+procedure SelectScreen(i:integer);
+  begin
+    if RamScreenGlb and (I=2) then GrafBase:=Seg(ScreenGlb^)
+    else GrafBase:=HardwareGrafBase;
+  end;
+
+function GetScreen:byte;
+  begin
+    if GrafBase=HardwareGrafBase then GetScreen:=1 else GetScreen:=2;
+  end;
+
+procedure DefineWorld(i:integer;
+                      X_1,Y_1,X_2,Y_2:real);
+  begin
+    if ((X_1<>X_2) and (Y_1<>Y_2)) and (i in [1..MaxWorldsGlb]) then
+      with world[i] do
+       begin
+        x1:=X_1;y1:=Y_2;x2:=X_2;y2:=Y_1;
+        if i>MaxWorldGlb then MaxWorldGlb:=i;
+       end
+    else if i in [1..MaxWorldsGlb] then error(1,3)
+    else error(1,2);
+  end;
+
+procedure SelectWorld(i:integer);
+  begin
+    if (i in [1..MaxWorldGlb]) then
+      with world[i] do
+       begin
+        X1WldGlb:=x1;
+        Y1WldGlb:=y1;
+        X2WldGlb:=x2;
+        Y2WldGlb:=y2;
+       end
+    else error(2,2);
+  end;
+
+procedure ReDefineWindow(i,X_1,Y_1,X_2,Y_2:integer);
+  begin
+    if (i in [1..MaxWindowsGlb]) and (X_1<=X_2) and (Y_1<=Y_2) and
+       (X_1>=0) and (X_2<=XMaxGlb) and (Y_1>=0) and (Y_2<=YMaxGlb) then
+      with window[i] do
+       begin
+        x1:=X_1;
+        y1:=Y_1;
+        x2:=X_2;
+        y2:=Y_2;
+        if i>MaxWindowGlb then MaxWindowGlb:=i;
+       end
+    else if i in [1..MaxWindowsGlb] then error(3,3)
+    else error(3,2);
+  end;
+
+procedure DefineWindow(i,X_1,Y_1,X_2,Y_2:integer);
+  begin
+    ReDefineWindow(i,X_1,Y_1,X_2,Y_2);
+    with window[i] do
+     begin
+      header:='';
+      top:=true;
+      drawn:=false;
+     end;
+  end;
+
+function TextLeft(TX,Boundary:integer):integer;
+  var TL:integer;
+  begin
+    TL:=((TX-1)*((XScreenMaxGlb+1) div 80)-Boundary) div 8;
+    if TL<0 then TL:=0
+    else if TL>XMaxGlb then TL:=XMaxGlb;
+    TextLeft:=TL;
+  end;
+
+function TextRight(TX,Boundary:integer):integer;
+  var TR:integer;
+  begin
+    TR:=(XScreenMaxGlb+1) div 80;
+    TR:=(TX*TR+Boundary-1) div 8;
+    if TR<0 then TR:=0
+    else if TR>XMaxGlb then TR:=XMaxGlb;
+    TextRight:=TR;
+  end;
+
+function TextUp(TY,Boundary:integer):integer;
+  var TU:integer;
+  begin
+    TU:=(TY-1)*((YMaxGlb+1) Div 25)-Boundary;
+    if TU<0 then TU:=0
+    else if TU>YMaxGlb then TU:=YMaxGlb;
+    TextUp:=TU;
+  end;
+
+function TextDown(TY,Boundary:integer):integer;
+  var TD:integer;
+  begin
+    TD:=TY*((YMaxGlb+1) Div 25)+Boundary-1;
+    if TD<0 then TD:=0
+    else if TD>YMaxGlb then TD:=YMaxGlb;
+    TextDown:=TD;
+  end;
+
+procedure DefineTextWindow(i,X1,Y1,X2,Y2,B:integer);
+  begin
+    DefineWindow(i,TextLeft(X1,B),TextUp(Y1,B),TextRight(X2,B),TextDown(Y2,B));
+  end;
+
+procedure SelectWindow(i:integer);
+  begin
+    if (i in [1..MaxWindowGlb]) then
+      with window[i] do
+       begin
+        WindowNdxGlb:=i;
+        X1RefGlb:=x1;
+        Y1RefGlb:=y1;
+        X2RefGlb:=x2;
+        Y2RefGlb:=y2;
+        BxGlb:=((x2-x1) shl 3+7)/(X2WldGlb-X1WldGlb);
+        ByGlb:=(y2-y1)/(Y2WldGlb-Y1WldGlb);
+        AxGlb:=(x1 shl 3)-X1WldGlb*BxGlb;
+        AyGlb:=y1-Y1WldGlb*ByGlb;
+        if AxisGlb then
+         begin
+          AxisGlb:=false;
+          X1Glb:=0;
+          Y1Glb:=0;
+          X2Glb:=0;
+          Y2Glb:=0;
+         end;
+       end
+    else error(4,2);
+  end;
+
+function WindowX(x:real):integer;
+  begin
+    WindowX:=trunc(AxGlb+BxGlb*x);
+  end;
+
+function WindowY(y:real):integer;
+  begin
+    WindowY:=trunc(AyGlb+ByGlb*y);
+  end;
+
+procedure InitGraphic;
+  var fil:file of CharArray;
+      tfile:text;
+      test:^integer;
+      temp:WrkString;
+      i:integer;
+
+  begin
+    GotoXY(1,1);
+    if not HardwarePresent then
+     begin
+      ClrScr;
+      GotoXY(1,2);
+      writeln('Fatal error: graphics hardware not found or not properly activated');
+      halt;
+     end;
+    MessageGlb:=True;
+    BrkGlb:=False;
+    GrafModeGlb:=False;
+    GetMem(ErrorProc[0],16);
+    GetMem(ErrorCode[0],24);
+    ErrorProc[0]^:='InitGraphic';
+    ErrorCode[0]^:='ERROR.MSG missing';
+    assign(tfile,'error.msg');
+    {$I-} reset(tfile); {$I+}
+    if ioresult=0 then
+     begin
+      for i:=0 to MaxProcsGlb do
+       begin
+        readln(tfile,temp);
+        if i<>0 then GetMem(ErrorProc[i],length(temp)+1);
+        ErrorProc[i]^:=temp;
+       end;
+      for i:=0 to MaxErrsGlb do
+       begin
+        readln(tfile,temp);
+        if i<>0 then GetMem(ErrorCode[i],length(temp)+1);
+        ErrorCode[i]^:=temp;
+       end;
+      readln(tfile,PcGlb);
+      close(tfile);
+     end
+    else
+     begin
+      GetMem(ErrorProc[1],14);
+      ErrorProc[1]^:='** UNKNOWN **';
+      for i:=2 to MaxProcsGlb do
+        ErrorProc[i]:=ErrorProc[1];
+      for i:=1 to MaxErrsGlb do ErrorCode[i]:=ErrorProc[1];
+      error(0,0);
+     end;
+    for i:=1 to MaxWorldsGlb do
+      DefineWorld(i,0,0,XScreenMaxGlb,YMaxGlb);
+    MaxWorldGlb:=1;
+    for i:=1 to MaxWindowsGlb do
+     begin
+      DefineWindow(i,0,0,XMaxGlb,YMaxGlb);
+      with stack[i] do
+       begin
+        W.Size:=0;
+        Contents:=Nil;
+       end;
+      RemoveHeader(i);
+     end;
+    MaxWindowGlb:=1;
+    if CharFile<>'' then
+     begin
+      assign(fil,CharFile);
+      {$I-} reset(fil); {$I+}
+      if ioresult=0 then read(fil,CharSet)
+      else error(0,1);
+      close(fil);
+     end;
+    BrkGlb:=true;
+    if RamScreenGlb then
+     begin
+      AllocateRAMScreen;
+      SelectScreen(2);
+      ClearScreen;
+     end;
+    SelectScreen(1);
+    WindowNdxGlb:=1;
+    SelectWorld(1);
+    SelectWindow(1);
+    SetColorWhite;
+    SetClippingOn;
+    SetAspect(AspectFactor);
+    DirectModeGlb:=false;
+    PieGlb:=false;
+    SetMessageOn;
+    SetHeaderOff;
+    SetHeaderToTop;
+    ErrCodeGlb:=0;
+    SetLineStyle(0);
+    VStepGlb:=IVStepGlb;
+    EnterGraphic;
+    X1Glb:=0;
+    X2Glb:=0;
+    Y1Glb:=0;
+    Y2Glb:=0;
+    AxisGlb:=false;
+    HatchGlb:=false;
+  end;
+
+procedure ResetWindows;
+  var i:integer;
+
+  begin
+    for i:=1 to MaxWindowsGlb do
+     begin
+      DefineWindow(i,0,0,XMaxGlb,YMaxGlb);
+      RemoveHeader(i);
+     end;
+    SelectWindow(1);
+  end;
+
+procedure ResetWorlds;
+  var i:integer;
+
+  begin
+    for i:=1 to MaxWorldsGlb do
+      DefineWorld(i,0,0,XScreenMaxGlb,YMaxGlb);
+    SelectWorld(1);
+    SelectWindow(WindowNdxGlb);
+  end;
+
+function clip(var x1,y1,x2,y2:integer):boolean;
+  var ix1,iy1,ix2,iy2,dummy,X1Loc,X2Loc:integer;
+      ClipLoc:boolean;
+
+  function inside(x,xx1,xx2:integer):integer;
+    begin
+      inside:=0;
+      if x<xx1 then inside:=-1
+      else if x>xx2 then inside:=1;
+    end;
+
+  begin
+    clip:=true;
+    ClipLoc:=true;
+    if ClippingGlb then
+     begin
+      if HatchGlb then
+       begin
+        X1Loc:=X1RefGlb;
+        X2Loc:=X2RefGlb;
+       end
+      else
+       begin
+        X1Loc:=X1RefGlb shl 3;
+        X2Loc:=X2RefGlb shl 3 +7;
+       end;
+      ix1:=inside(x1,X1Loc,X2Loc);
+      iy1:=inside(y1,Y1RefGlb,Y2RefGlb);
+      ix2:=inside(x2,X1Loc,X2Loc);
+      iy2:=inside(y2,Y1RefGlb,Y2RefGlb);
+      if (ix1 or ix2 or iy1 or iy2)<>0 then
+       begin
+        if x1<>x2 then
+         begin
+          if ix1<>0 then
+           begin
+            if ix1<0 then dummy:=X1Loc else dummy:=X2Loc;
+            if y2<>y1 then y1:=y1+trunc((y2-y1)/(x2-x1)*(dummy-x1));
+            x1:=dummy;
+           end;
+          if (ix2<>0) and (x1<>x2) then
+           begin
+            if ix2<0 then dummy:=X1Loc else dummy:=X2Loc;
+            if y2<>y1 then y2:=y1+trunc((y2-y1)/(x2-x1)*(dummy-x1));
+            x2:=dummy;
+           end;
+          iy1:=inside(y1,Y1RefGlb,Y2RefGlb);
+          iy2:=inside(y2,Y1RefGlb,Y2RefGlb);
+         end;
+        if y1<>y2 then
+         begin
+          if iy1<>0 then
+           begin
+            if iy1<0 then dummy:=Y1RefGlb else dummy:=Y2RefGlb;
+            if x1<>x2 then x1:=x1+trunc((x2-x1)/(y2-y1)*(dummy-y1));
+            y1:=dummy;
+           end;
+          if iy2<>0 then
+           begin
+            if iy2<0 then dummy:=Y1RefGlb else dummy:=Y2RefGlb;
+            if x1<>x2 then x2:=x1+trunc((x2-x1)/(y2-y1)*(dummy-y1));
+            y2:=dummy;
+           end;
+         end;
+        iy1:=inside(y1,Y1RefGlb,Y2RefGlb);
+        iy2:=inside(y2,Y1RefGlb,Y2RefGlb);
+        if (iy1<>0) or (iy2<>0) then ClipLoc:=false;
+        if ClipLoc then
+         begin
+          ix1:=inside(x1,X1Loc,X2Loc);
+          ix2:=inside(x2,X1Loc,X2Loc);
+          if (ix2<>0) or (ix1<>0) then ClipLoc:=false;
+         end;
+        clip:=ClipLoc;
+       end;
+     end;
+  end;
+
+procedure DrawPoint(xr,yr:real);
+  var x,y:integer;
+
+  begin
+    if DirectModeGlb then dp(trunc(xr),trunc(yr))
+    else
+     begin
+      x:=WindowX(xr);
+      y:=WindowY(yr);
+      if ClippingGlb then
+       begin
+        if (x>=X1RefGlb shl 3) and (x<X2RefGlb shl 3+7) then
+          if (y>=Y1RefGlb) and (y<=Y2RefGlb) then dp(x,y);
+       end
+      else dp(x,y);
+     end;
+  end;
+
+function PointDrawn(xr,yr:real):boolean;
+  begin
+    if DirectModeGlb then PointDrawn:=PD(trunc(xr),trunc(yr))
+    else PointDrawn:=PD(WindowX(xr),WindowY(yr));
+  end;
+
+procedure DrawLine(x1,y1,x2,y2:real);
+  var X1Loc,Y1Loc,X2Loc,Y2Loc:integer;
+
+  procedure DrawLineDirect(x1,y1,x2,y2:integer);
+    var x,y,DeltaX,DeltaY,XStep,YStep,direction:integer;
+
+    begin
+      x:=x1;
+      y:=y1;
+      XStep:=1;
+      YStep:=1;
+      if x1>x2 then XStep:=-1;
+      if y1>y2 then YStep:=-1;
+      DeltaX:=abs(x2-x1);
+      DeltaY:=abs(y2-y1);
+      if DeltaX=0 then direction:=-1
+      else direction:=0;
+      while not ((x=x2) and (y=y2)) do
+       begin
+        if LinestyleGlb=0 then dp(x,y)
+        else
+         begin
+          CntGlb:=(CntGlb+1) and 7;
+          if LineStyleArrayGlb[CntGlb] then dp(x,y);
+         end;
+        if direction<0 then
+         begin
+          y:=y+YStep;
+          direction:=direction+DeltaX;
+         end
+        else
+         begin
+          x:=x+XStep;
+          direction:=direction-DeltaY;
+         end;
+       end;
+    end;
+
+  begin
+    if DirectModeGlb then
+      DrawLineDirect(trunc(x1),trunc(y1),trunc(x2),trunc(y2))
+    else
+     begin
+      X1Loc:=WindowX(x1);
+      Y1Loc:=WindowY(y1);
+      X2Loc:=WindowX(x2);
+      Y2Loc:=WindowY(y2);
+      if clip (X1Loc,Y1Loc,X2Loc,Y2Loc) then
+        DrawLineDirect(X1Loc,Y1Loc,X2Loc,Y2Loc);
+     end;
+  end;
+
+procedure DrawLineClipped(x1,y1,x2,y2:integer);
+  begin
+    if clip(x1,y1,x2,y2) then DrawLine(x1,y1,x2,y2);
+  end;
+
+procedure DrawCrossDiag(x,y,scale:integer);
+  begin
+    DrawLineClipped(x-scale,y+scale,x+scale+1,y-scale-1);
+    DrawLineClipped(x-scale,y-scale,x+scale+1,y+scale+1);
+  end;
+
+procedure DrawWye(x,y,scale:integer);
+  begin
+    DrawLineClipped(x-scale,y-scale,x,y);
+    DrawLineClipped(x+scale,y-scale,x,y);
+    DrawLineClipped(x,y,x,y+scale);
+  end;
+
+procedure DrawDiamond(x,y,scale:integer);
+  begin
+    DrawLineClipped(x-scale,y,x,y-scale-1);
+    DrawLineClipped(x,y-scale+1,x+scale,y+1);
+    DrawLineClipped(x+scale,y+1,x,y+scale);
+    DrawLineClipped(x,y+scale,x-scale,y);
+  end;
+
+procedure DrawCircleDirect(xr,yr,r:integer; DirectModeLoc: boolean);
+  const n=14;
+  type Circ = array [1..n] of integer;
+  const x:Circ=(0,121,239,355,465,568,663,749,823,885,935,971,993,1000);
+  var xk1,xk2,yk1,yk2,xp1,yp1,xp2,yp2:integer;
+      xfact,yfact:real;
+      i:integer;
+
+  procedure DrawLinW(X1,Y1,X2,Y2:integer);
+    var DrawIt: boolean;
+
+    begin
+      DrawIt:=DirectModeLoc;
+      if not DrawIt then DrawIt:=Clip(X1,Y1,X2,Y2);
+      if DrawIt then DrawLine(X1,Y1,X2,Y2);
+    end;
+
+  begin
+    xfact:=abs(r*0.001);
+    yfact:=xfact*AspectGlb;
+    if xfact>0.0 then
+     begin
+      xk1:=trunc(x[1]*xfact+0.5);
+      yk1:=trunc(x[n]*yfact+0.5);
+      for i:=2 to n do
+       begin
+        xk2:=trunc(x[i]*xfact+0.5);
+        yk2:=trunc(x[n-i+1]*yfact+0.5);
+        xp1:=xr-xk1;
+        yp1:=yr+yk1;
+        xp2:=xr-xk2;
+        yp2:=yr+yk2;
+        DrawLinW(xp1,yp1,xp2,yp2);
+        xp1:=xr+xk1;
+        xp2:=xr+xk2;
+        DrawLinW(xp1,yp1,xp2,yp2);
+        yp1:=yr-yk1;
+        yp2:=yr-yk2;
+        DrawLinW(xp1,yp1+1,xp2,yp2+1);
+        xp1:=xr-xk1;
+        xp2:=xr-xk2;
+        DrawLinW(xp1,yp1+1,xp2,yp2+1);
+        xk1:=xk2;
+        yk1:=yk2;
+       end;
+     end
+    else dp(xr,yr);
+  end;
+
+procedure DrawCircle(X_R,Y_R,xradius:real);
+  var DirectModeLoc:boolean;
+
+  begin { DrawCircle }
+    DirectModeLoc:=DirectModeGlb;
+    DirectModeGlb:=True;
+    if DirectModeLoc then DrawCircleDirect(trunc(X_R),trunc(Y_R),trunc(xradius),True)
+    else DrawCircleDirect(WindowX(X_R),WindowY(Y_R),trunc(xradius*100.0),False);
+    DirectModeGlb:=DirectModeLoc;
+  end;
+
+procedure DrawCross(x1,y1,scale:integer);
+  begin
+    DrawLineClipped(x1-scale,y1,x1+scale+2,y1);
+    DrawLineClipped(x1,y1-scale,x1,y1+scale+1);
+  end;
+
+procedure DrawStar(x,y,scale:integer);
+  begin
+    DrawLineClipped(x-scale,y+scale,x+scale+1,y-scale-1);
+    DrawLineClipped(x-scale,y-scale,x+scale+1,y+scale+1);
+    DrawLineClipped(x-scale-2,y,x+scale+4,y);
+  end;
+
+procedure DrawSquareC(x1,y1,x2,y2:integer;
+                        fill:boolean);
+  var i:integer;
+
+  procedure DSC(x1,x2,y:integer);
+    begin
+      if clip(x1,y,x2,y) then
+        if LineStyleGlb=0 then DrawStraight(x1,x2,y)
+        else DrawLine(x1,y,x2,y);
+    end;
+
+  begin
+    if not fill then
+     begin
+      DSC(x1,x2,y1);
+      DrawLineClipped(x2,y1,x2,y2);
+      DSC(x1,x2,y2);
+      DrawLineClipped(x1,y2,x1,y1);
+     end
+    else
+    for i:=y2 to y1 do DSC(x1,x2,i);
+  end;
+
+procedure DrawSquare(X1,Y1,X2,Y2:real;
+                     fill:boolean);
+  var i,x1loc,y1loc,x2loc,y2loc:integer;
+      DirectModeLoc:boolean;
+
+  procedure DS(x1,x2,y:integer);
+    begin
+      if LineStyleGlb=0 then DrawStraight(x1,x2,y)
+      else DrawLine(x1,y,x2,y);
+    end;
+
+  procedure DSC(x1,x2,y:integer);
+    begin
+      if clip(x1,y,x2,y) then DS(x1,x2,y);
+    end;
+
+  procedure DrawSqr(x1,y1,x2,y2:integer;
+                    fill:boolean);
+    var i:integer;
+
+    begin
+      if not fill then
+       begin
+        DS(x1,x2,y1);
+        DrawLine(x2,y1,x2,y2);
+        DS(x1,x2,y2);
+        DrawLine(x1,y2,x1,y1);
+       end
+      else
+      for i:=y1 to y2 do DS(x1,x2,i);
+    end;
+
+  begin
+     if DirectModeGlb then DrawSqr(trunc(X1),trunc(Y1),trunc(X2),trunc(Y2),fill)
+    else
+     begin
+      DirectModeLoc:=DirectModeGlb;
+      DirectModeGlb:=true;
+      x1loc:=WindowX(X1);
+      y1loc:=WindowY(Y1);
+      x2loc:=WindowX(X2);
+      y2loc:=WindowY(Y2);
+      if not fill then
+       begin
+        DSC(x1loc,x2loc,y1loc);
+        DrawLineClipped(x2loc,y1loc,x2loc,y2loc);
+        DSC(x1loc,x2loc,y2loc);
+        DrawLineClipped(x1loc,y2loc,x1loc,y1loc);
+       end
+      else
+        for i:=y1loc to y2loc do DSC(x1loc,x2loc,i);
+      DirectModeGlb:=DirectModeLoc;
+     end;
+  end;
+
+procedure DrawAscii(var x,y:integer;
+                    size,ch:byte);
+  var x1ref,x2ref,xpos,ypos,xstart,ystart,xend,yend,xx,yy: integer;
+      charbyte: byte;
+
+  begin
+    x1ref:=X1RefGlb shl 3;
+    x2ref:=X2RefGlb shl 3+7;
+    for ypos:=0 to 5 do
+     begin
+      CharByte:=(CharSet[ch,(7-ypos) shr 1] shr ((ypos and 1) shl 2)) and $0F;
+      for xpos:=0 to 3 do
+        if (CharByte shr (3-xpos)) and 1<>0 then
+         begin
+          xstart:=x+xpos*size;
+          xend:=xstart+size-1;
+          ystart:=y+1+(ypos-2)*size;
+          yend:=ystart+size-1;
+          if ClippingGlb then
+           begin
+            if xstart<x1ref then xstart:=x1ref;
+            if xend>x2ref then xend:=x2ref;
+            if ystart<Y1RefGlb then ystart:=Y1RefGlb;
+            if yend>Y2RefGlb then yend:=Y2RefGlb;
+           end;
+          for yy:=ystart to yend do
+            for xx:=xstart to xend do
+              dp(xx,yy);
+         end;
+     end;
+     x:=x+size*6;
+   end;
+
+procedure DrawText(x,y,scale:integer;
+                   txt:wrkstring);
+  var LineStyleLoc,code,AsciiValue,StringLen,i,SymbolScale,SymbolCode:integer;
+      DirectModeLoc:boolean;
+
+  begin
+    DirectModeLoc:=DirectModeGlb;
+    DirectModeGlb:=true;
+    LineStyleLoc:=LinestyleGlb;
+    SetLineStyle(0);
+    StringLen:=length(txt);
+    i:=1;
+    while i<=StringLen do
+     begin
+      AsciiValue:=ord(txt[i]);
+      if AsciiValue=27 then
+       begin
+        SymbolScale:=scale;
+        i:=i+1;
+        if i<=StringLen then
+         begin
+          val(txt[i],SymbolCode,code);
+          if (i+2<=StringLen) and (ord(txt[i+1])=64) then
+           begin
+            val(txt[i+2],SymbolScale,code);
+            i:=i+2;
+           end;
+          case SymbolCode of
+            1:DrawCross(x+SymbolScale,y+scale,SymbolScale);
+            2:DrawCrossDiag(x+SymbolScale,y+scale,SymbolScale);
+            3,4: DrawSquareC(x,y+(SymbolScale shl 1)-1,x+(SymbolScale shl 1),
+                             y-1,(SymbolCode=4));
+            5:begin
+                DrawDiamond(x+trunc(1.5*SymbolScale),y+SymbolScale-1,SymbolScale+1);
+                x:=x+SymbolScale;
+              end;
+            6:DrawWye(x+SymbolScale,y+SymbolScale-1,SymbolScale);
+            7:begin
+                DrawStar(x+SymbolScale shl 1,y+SymbolScale-1,SymbolScale);
+                x:=x+SymbolScale shl 1;
+              end;
+            8:DrawCircleDirect(x+SymbolScale,y+(SymbolScale shr 1),SymbolScale+1,False);
+           end;
+          x:=x+3*SymbolScale;
+          SymbolScale:=scale;
+         end;
+       end
+      else DrawAscii(x,y,scale,AsciiValue);
+      i:=i+1;
+           end;
+    DirectModeGlb:=DirectModeLoc;
+    SetLineStyle(LineStyleLoc);
+  end;
+
+procedure DrawTextW(x,y:real;
+                    scale:integer;
+                    txt:wrkstring);
+  begin
+    if DirectModeGlb then DrawText(trunc(x),trunc(y),scale,txt)
+    else DrawText(WindowX(x),WindowY(y),scale,txt);
+  end;
+
+procedure DrawBorder;
+  var ClipLoc,DirectModeLoc:boolean;
+      xl1,xl2:integer;
+
+  procedure DrawHeaderBackground(y1,y2:integer);
+    var i:integer;
+
+    begin
+      for i:=y1 to y2 do DrawStraight(xl1,xl2,i);
+    end;
+
+  procedure DrawHeader;
+    var Y1Hdr,Y2Hdr,yl1,yl2:integer;
+    begin
+      with window[WindowNdxGlb] do
+       begin
+        if drawn then
+          if top then
+           begin
+            ReDefineWindow(WindowNdxGlb,X1RefGlb,Y1RefGlb-HeaderSizeGlb,X2RefGlb,Y2RefGlb);
+            SelectWindow(WindowNdxGlb);
+           end
+          else
+           begin
+            ReDefineWindow(WindowNdxGlb,X1RefGlb,Y1RefGlb,X2RefGlb,Y2RefGlb+HeaderSizeGlb);
+            SelectWindow(WindowNdxGlb);
+           end;
+        if TopGlb then
+         begin
+          yl1:=Y1RefGlb+HeaderSizeGlb;
+          yl2:=Y2RefGlb;
+          Y1Hdr:=Y1RefGlb;
+          Y2Hdr:=Y1RefGlb+HeaderSizeGlb-1;
+         end
+        else
+         begin
+          yl1:=Y1RefGlb;
+          yl2:=Y2RefGlb-HeaderSizeGlb;
+          Y1Hdr:=Y2RefGlb-HeaderSizeGlb+1;
+          Y2Hdr:=Y2RefGlb;
+         end;
+        top:=TopGlb;
+        ReDefineWindow(WindowNdxGlb,X1RefGlb,yl1,X2RefGlb,yl2);
+        SelectWindow(WindowNdxGlb);
+        DrawHeaderBackground(Y1Hdr,Y2Hdr);
+        ColorGlb:=255-ColorGlb;
+        DrawText(xl1+2+(xl2-xl1-length(header)*6) shr 1,Y1Hdr+3,1,header);
+        DrawSquare(xl1,Y1Hdr,xl2,Y2Hdr,false);
+        ColorGlb:=255-ColorGlb;
+        DrawSquare(xl1,Y1RefGlb,xl2,Y2RefGlb,false);
+        drawn:=true;
+      end;
+    end;
+
+  begin
+    DirectModeLoc:=DirectModeGlb;
+    DirectModeGlb:=true;
+    ClipLoc:=ClippingGlb;
+    ClippingGlb:=false;
+    xl1:=X1RefGlb shl 3;
+    xl2:=X2RefGlb shl 3+7;
+    with window[WindowNdxGlb] do
+      if ((HeaderGlb) and (length(header)>0)) and (y2-y1>HeaderSizeGlb) and
+         ((length(header)*6)<abs(xl2-xl1)-4) then
+        DrawHeader
+      else
+       begin
+        drawn:=false;
+        DrawSquare(xl1,Y1RefGlb,xl2,Y2RefGlb,false);
+       end;
+    DirectModeGlb:=DirectModeLoc;
+    ClippingGlb:=ClipLoc;
+  end;
+
+procedure hardcopy(inverse:boolean;mode:byte); { EPSON }
+  var i,j,top:integer;
+      ColorLoc,PrintByte:byte;
+
+  procedure doline(top:integer);
+    function ConstructByte(j,i:integer):byte;
+      const Bits:array [0..7] of byte=(128,64,32,16,8,4,2,1);
+      var CByte,k:byte;
+      begin
+        i:=i shl 3;
+        CByte:=0;
+        for k:=0 to top do
+          if PD(j,i+k) then CByte:=CByte or Bits[k];
+        ConstructByte:=CByte;
+      end;
+    begin
+      if mode=1 then write(lst,^['L')
+      else write(lst,^['*',chr(mode));
+      write(lst,chr(lo(XScreenMaxGlb+1)),chr(Hi(XScreenMaxGlb+1)));
+      for j:=0 to XScreenMaxGlb do
+       begin
+        PrintByte:=ConstructByte(j,i);
+        if inverse then PrintByte:=not PrintByte;
+        write(lst,chr(PrintByte));
+       end;
+      if mode<>4 then writeln(lst);
+    end;
+
+  begin
+    top:=7;
+    ColorLoc:=ColorGlb;
+    ColorGlb:=255;
+    mode:=mode and 7;
+    if (mode=5) or (mode=0) then mode:=4;
+    write(lst,^['3'#24);
+    for i:=0 to ((YMaxGlb+1) shr 3)-1 do doline(7);
+    i:=((YMaxGlb+1) shr 3);
+    if (YMaxGlb+1) and 7<>0 then
+      doline((YMaxGlb+1) and 7);
+    writeln(lst,^['2');
+    ColorGlb:=ColorLoc;
+  end;
+

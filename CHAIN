@@ -1,0 +1,33 @@
+Example of using 'chain' to link programs.
+
+var
+    linkminor : file;         {the file variable can be any name
+                               you choose; once chosen, it must be
+                               referred to in the assign and chain
+                               commands}
+
+
+procedure nogo;                {"nogo" can be called from any chained
+                                 routine to halt program if input value
+                                 out of bounds}
+               begin
+               writeln('Input value out of bounds...');
+               writeln;writeln('Try again...');
+               halt;
+               end;
+
+
+begin
+   gotoxy(15,3); writeln('1. Square of a Number');
+
+     '1' : begin
+              clrscr;
+              assign(linkminor,'sqrx.chn');   {we are assigning the program
+                                                file, sqrx.chn, to be identi-
+                                                ied as the linkminor--see
+                                                var}
+               chain(linkminor);
+           end;
+
+
+end.

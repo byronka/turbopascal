@@ -1,0 +1,20 @@
+program test_mod_use; {demo of MOD function}
+(* MOD function is often used to read each nth line of Dividend long file *)
+
+var
+   Dividend,Divisor,Remainder : integer;
+{Note: if Dividend or Divisor are real, they must be rounded to integers}
+
+begin;
+      clrscr;
+      writeln('enter Dividend');
+      readln(Dividend);
+      writeln('enter Divisor');
+      readln(Divisor);
+      if Divisor = 0 then begin
+         writeln('Cannot divide by zero');
+         halt;
+      end;
+      Remainder:=Dividend mod(Divisor);
+      writeln('Remainder = ',Remainder);
+end.

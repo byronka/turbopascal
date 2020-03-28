@@ -1,0 +1,35 @@
+17:23:28  9/5/1992
+
+Hi Mr. B....
+
+I did not recall if I had earlier given you some of the files contained on
+this disk.  In any event, I include all the files here you need to run
+Turbo-Pascal, including graphics.  I also include some note files (i.e.,
+those without any extension) and some codes I've generated in the past
+which you might find useful or instructive.  Also, of course, I've included
+FAMILY.PAS, the code you asked for.
+
+Since each of the notes files and Pascal codes are in ASCII (i.e., they can
+be read in alpha-numeric format) you can easily type out any of them and
+see how they are constructed.
+
+You should find the file, COMMANDS, useful as it summarizes all the
+commands that you'll find in the book
+
+To run any of the pascal codes, you only need to enter TURBO from the
+command line and follow the prompts.  After you enter "y" for the error
+messages, you only need to enter "w" to call up a Work file and you'll be
+asked for the Work file name.  Simple type in the pascal code you want to
+run (e.g., FAMILY) without the extension and the progam will load
+FAMILY.PAS.  Then, at the cursor (e.g. >) enter "e" which is for edit and
+you will see the contents of the code.  When you are done examining the
+code, you can hit the F1 function key to bring back the cursor.  Then to
+run the code, simply enter "r" (for run) at the cursor and the program will
+run the code.
+
+That's about all there is to it.  If you have any questions, let me know.
+Grandmom and I send our love to you and your family.
+
+                               Grandad
+
+

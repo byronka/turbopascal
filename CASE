@@ -1,0 +1,26 @@
+Example of using 'case' statements to create menu.........
+
+var
+   select      : char;
+
+begin
+   clrscr;
+   gotoxy(20,1); writeln('**** Math Functions ****');
+   gotoxy(15,3); writeln('1. Square of a Number');
+   gotoxy(15,24); writeln('If you wish to exit program, enter "0"');
+
+   case select of
+     '0' : begin                             {exit main program on 0}
+                clrscr;
+                goto stop;
+           end;
+     '1' : begin
+              clrscr;
+              assign(linkminor,'sqrx.chn');   {we are assigning the program
+                                                file, sqrx.chn, to be identi-
+                                                ied as the linkminor--see
+                                                var}
+               chain(linkminor);
+           end;
+
+      .etc.....

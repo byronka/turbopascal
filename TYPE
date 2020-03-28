@@ -1,0 +1,129 @@
+program matrix_type;   {11-19-86}
+
+(* This is example routine of using "types" to create and copy
+data  from one matrix to another*)
+
+type
+    matrix = array[1..5,1..5] of real;
+
+var
+   matrix1,
+   matrix2,
+   matrix3    : matrix;
+
+   x,y               : real;
+   j,k,                       {row and column of major matrix}
+   m,n,                       {row and column of minor matrix}
+   p                          {index number of minor matrix}
+                     : integer;
+   MatrixDim         : integer;
+   filespec          : string[30];
+   start             : string[2];
+   ch,cd,cp          : char;
+   datafile          : file of real;
+
+procedure ReadOut;
+begin
+     clrscr;
+     cp:= ' ';
+     cd:= ' ';
+     assign(datafile, filespec);
+     reset(datafile);
+     writeln;
+     writeln('If you wish to display data, enter "d"');
+     read(kbd,cd);
+     writeln('Do you want printout of data ? Enter "p" if so');
+     read(kbd,cp);
+     j:=0;
+     k:=0;
+     clrscr;
+     writeln('             ',filespec);   {screen label for filespec}
+     writeln;
+     writeln('Remember...all elements readout as element[j,k] where ');
+     writeln('     j is row # and k is col #');
+     writeln;
+     while not eof(datafile) do begin;
+           for j:=1 to MatrixDim do begin        {j is row #}
+               for k:=1 to MatrixDim do begin    {k is column #}
+                        read(datafile, matrix1[j,k]);
+                        if cd='d' then writeln(j,' ',k,' ',matrix1[j,k]);
+                        if cp='p' then writeln(lst,j,' ',k,' ',matrix1[j,k]);
+                end;
+                 if cd='d' then writeln;
+                 if cp='p' then writeln(lst,' ');
+           end;
+           (*    end of datafile readout            *)
+     end;
+     close(datafile);
+     writeln('Press any key to continue');
+     repeat until keypressed;
+end;
+
+procedure ReadIn;
+begin
+          start:=' ';
+          clrscr;
+          writeln('ARE YOU SURE YOU WANT TO ENTER NEW DATA ? IF SO, TYPE "go"');
+          readln(start);
+          if start <> 'go' then begin
+              gotoxy(20,24);writeln('Re-run code to avoid erasing input file');
+              halt;
+          end;
+          clrscr;
+          writeln('Remember...we enter all elements in row 1 first; then row 2; etc');
+          writeln;
+          assign(datafile, filespec);
+          rewrite(datafile);
+          j:=0;
+          ch:=' ';
+          for j:=1 to MatrixDim do begin  {j = rows; k = columns}
+              for k:=1 to MatrixDim do begin
+                  writeln('enter element[',j,' ',k,']');
+                  readln(matrix1[j,k]);
+                  write(datafile,matrix1[j,k]);
+              end;
+           end;
+           close(datafile);
+           assign(datafile, filespec);
+           reset(datafile);
+           clrscr;
+           writeln('             ',filespec);
+           writeln;
+           while not eof(datafile) do begin;
+                 for j:=1 to MatrixDim do begin
+                     for k:=1 to MatrixDim do begin
+                         read(datafile, matrix1[j,k]);
+                         writeln('Major Element[',j,' ',k,'] = ',matrix1[j,k]);
+                     end;
+                  end;
+                  writeln;
+                  writeln('Press any key to continue');
+                  repeat until keypressed;
+           end;
+           close(datafile);
+end;
+
+begin  {MAIN PROGRAM}
+
+     clrscr;
+     writeln('Enter the number of rows/columns in your matrix');
+     readln(MatrixDim);
+     clrscr;
+     writeln('If you wish to read matrix from an existing disk file, enter "y"');
+     writeln('    else you must input matrix data');
+     read(kbd,ch);
+     clrscr;
+     writeln('Enter filespec for datafile');
+     readln(filespec);
+     if ch = 'y' then begin
+        ReadOut;
+     end
+     else ReadIn;
+     matrix2:=matrix1;     {copy data from matrix1 to matrix2}
+
+      for j:=1 to MatrixDim do begin  {j = rows; k = columns}
+              for k:=1 to MatrixDim do begin
+                  writeln(matrix1[j,k],'  ',matrix2[j,k]);
+              end;
+       end;
+

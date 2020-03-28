@@ -1,0 +1,230 @@
+******************* TURBO COMMANDS/STATEMENTS/SUBJECTS **********************************
+{use ^qb to goto top of this file; ^qc to go to end of file}
+{use ^kb and ^kk to mark blocks}
+Call 'graphics' for graphics commands
+NOTE: See p 235 [front of book] for TURBO SYNTAX
+See p 206 for Summary of Standard Procedures and Functions
+See p 211 for Summary of Operators
+See Turbo Toolbox at back of book for IBM Goodies[17]
+[xx] refers to ref page nos. in book
+
+To avoid hang-ups in program, use {$U+} at head of program!
+
+ABS(A)                       absolute value of a (real,integer)[132][177]
+ADDR(V)                      address of variable v (pointer)[178]
+ADDR(SUBP)                   address of subprogram subp (pointer)
+ARCTAN(X)                    arctangent of x (real)[132]
+ARRAY                        e.g. array[1..rows,1..columns] of integer;
+ASSIGN(F,N)                  assign file f to file name n, e.g.:
+                                assign(ytextfile, 'b:ytext.txt'); [94]
+BLOCKREAD(F,D,N)             read n blocks from d to file f[112]
+BLOCKWRITE(F,D,N)            write n blocks from d to file f[112]
+CASE                         [59] [or call SK file 'arrays']
+CHAIN(F)                     chain to file f [182] [call SK file 'chain']
+CHR(I)                       character with ascii value i (char)[135]
+CLOSE(F)                     close file f[96]
+CLREOL                       clear to end of current screen line [127]
+                               as in......gotoxy(2,15);clreol;
+CLRSCR                       clear entire screen[127]
+COMPILER OPTIONS             [173]
+CONCAT(S,...,S)              concatenation of strings (string)[71]
+COPY(S,P,L)                  substring at p length l (string)[71]
+COS(X)                       cosine of x (real)[132]
+CRTEXIT                      send terminal reset string [128]
+CRTLNIT                      sent terminal init string [127]
+DELAY(M)                     delay m milliseconds [128]
+DELETE(S,P,L)                delete section of string s [69]
+DELLINE                      delete churrent screen line [128]
+DISPOSE(P)                   recover memory used by p^
+DIV                          like 10 div 2 = 5 where 10,2 are integers
+DRAW                         graphics command [20 of turbo tools]
+EOF(F)                       end of file test on file f (boolean)[97]
+EOLN(F)                      end of line test on file f (boolean)[100]
+ERASE(F)                     delete file f [96]
+EXECUTE(F)                   execute file f [182]
+EXP(X)                       exponential of x, i.e., {e^x}  (real)[132];
+                              call 'exponent' for example  of base 10
+EXTERNAL                     calls external/machine language procedures;
+                             e.g.: Procedure Machine_prog; external 'mach';
+                             note: 'mach' must be COM program [181]
+FILE                         call SK 'filing' [93]
+FILEPOS(F)                   current record in file f (integer)[97]
+FILESIZE(F)                  total records in file f (integer)[97]
+FILLCHAR(V,L,D)              fill v with data d for l bytes [129]
+FLUSH                        [95]
+FOR                          Use as in 'for i:=1 to 100 do if [boolean]
+                             else goto [label]'  Note: i must be an integer
+                             type [60] [10-7 turbo tutor] [or call 'SK' file
+                             'for']
+FORWARD                      [138]
+FRAC(X)                      fractional portion of x (real)[133]
+FUNCTION                     [131]
+GETMEM(P,I)                  allocate i bytes of ram for p [119]
+CHAIN                        allows activation of other turbo programs [182]
+GOTO                         Goto must be followed by a label name and must
+                             occur within the same block as the label state-
+                             ment.  Goto cannot take you out of block in
+                             which declared[56]
+GOTOXY(X,Y)                  move cursor to x,y(1,1=upper limit)[128]
+GRAPHWINDOW                  graph command [26 of turbo tools]
+HALT                         stop program execution
+HEAP                         [194][17-4 of turbo tutor]
+HIGHVIDEO                    sets high intensity display mode
+HI(I)                        upper byte of i (integer)[136]
+HIRES                        graphics command [23 of turbo tools]
+IF                           example---for u:=0 to limit do begin
+                               read(xfile, xarray[u]);
+                               if (v<1) or (v>9) then writeln(u,xarray[u]);
+                               if v = 10 then v:=0;
+                               v:= v +1;
+                               end; [also see arrays.pas]  [57]
+INCLUDE FILES                You can include any other .pas file in a 'call'
+                             file by entering, under 'var' the following:
+                             {$I target.pas}  -- note the brackets [141]
+                             Also see INCLUDE.PAS for demo
+INSERT(S,D,P)                insert string d into s at position p [69]
+INSLINE                      insert line on screen [128]
+INT(X)                       integer portion of x (real)[133]
+IOresult                     use to preclude program termination, e.g.;
+     {$I-} Reset(DataFile) {$I+}; {check for existence of FileSpec}
+     if IOresult <> 0 then begin  {if file does not exist, create one}
+        i:=1;
+        Input_Record;
+     end;
+                             also see READ.PAS for other example
+
+KBD                          causes program action by hitting specified key
+                               e.g.: [note-- 'c' must show as char in var]
+                               writeln('hit "1" to cause action');
+                               read(kbd,c);
+                               if c='1' then action;
+                               if c=' ' is good for 'hit any key'
+KEYPRESSED                   keyboard status flag (boolean)[136]
+                               Use as in "repeat until Keypressed" to pause
+                               a run. Also may be used as in:
+
+                              writeln('hit any key to trigger action');
+                              if keypressed then begin;
+                              read(kbd,z);
+                              writeln('you just hit a key');
+                              end;
+
+LABEL                        Any statement may be prefixed by 'label name1,
+                             name2,etc ;' enabling direct branching to
+                             that statement by a 'goto' statement. Where used
+                             the name must be followed by a colon [;] [48]
+LENGTH(S)                    length of string s (integer)[72]
+LN(X)                        natural log of x (real)[133]; call 'exponent'
+                               for example of base 10
+LO(I)                        lower byte of i (integer)[136]
+LONGSEEK(F,P)                special seek routime [200]
+LOWVIDEO                     switch to dim video output[129]
+MARK(P)                      mark heap pointer at p^  [116]
+MEMAVAIL                     bytes/paragraphs available (integer)[180]
+MOD                          like 10 mod 2 = 0 where 10,2 are integers;
+                             can be used to step in N increments; e.g.
+                               "if 10 mod 5 = 0 then ..." is used to read
+                               each 5 units of A; see MOD file
+MOVE(S,D,L)                  move l bytes from s to d [129]
+MSDOS(R)                     make call to ms-dos with regs r
+NEW(P)                       create memory for p^ [116]
+NORMVIDEO                    switch to normal video output from dim [129]
+OPERATORS                    [51]
+OVERLAYS                     see turbo toolbox [1]
+PLOT                         graphics command [20 of turbo tools]
+POINTER                      See Defining a Pointer Variable[115]
+POS(P,S)                     position of str p in string s (integer)[72]
+PTR(I)                       pointer to address i (boolean)[181]
+ODD(I)                       odd/even test of i (boolean)[134]
+OFS                          returns offset [178]
+ORD(SC)                      ordinal value of scalar variable (integer)
+                             [12-5 of Turbo Tutor] [135]
+PRED(SC)                     predecessor of scalar value (same type)[134]
+PROCEDURE                    [121][125] [call SK file 'procedure']
+RANDOM                       random value from O to 0.999.. (real)[136]
+RANDOM(I)                    random value from 0 to i-1 (integer)[136]
+RANDOMIZE                    init random seed [129]
+READ(P1,...)                 read items in from keyboard [106]
+READ(F,P1...)                read items from file f [95][106]
+READLN(P1,...)               as 'read',but moves to new line at end [108]
+READLN(F,P1...)              ditto, but from file f (textfile only)[108]
+RECORD                       call 'record.' example [79]
+RELEASE(P)                   reset heap pointer to p^ [116]
+RENAME(F,S)                  rename file f to string s [96]
+REPEAT                       repeat
+                                   readln(input);
+                             until input:=0;
+RESET(F)                     open file for output [94]
+     {$I-} Reset(DataFile) {$I+}; {check for existence of FileSpec}
+     if IOresult <> 0 then begin  {if file does not exist, create one}
+        i:=1;
+        Input_Record;
+     end;
+REWRITE(F)                   open file for input [94]
+ROUND(X)                     rounded-off value of real (integer)[135]
+SEEK(F,n)                    where F is FileName and n is the number of the
+                                record being sought.  When used as in
+                                Seek(FileName,FileSize(FileName)) it will
+                                return the final data in the file
+SEG                          returns address of segment [178]
+SET                          [85]
+SHL(I)                       shift left (integer)
+SHR(I)                       shift right (integer)
+SIN(X)                       sine of x (real) [133]
+SIZEOF(V)                    size in bytes of variable v (integer)[137]
+SIZEOF(T)                    size in bytes of data type t (integer)[137]
+SEEK(F,P)                    move to record p in file f; can be used to
+                               find size of file as in :
+                               seek(datafile,filesize(datafile)) [95]
+SOUND(f)                     where f is freq in Hz; use NOSOUND to cancel
+                                [27 of turbo tools]
+SQR(A)                       a * a (real, integer)[133]
+SQRT(A)                      square root of a (real)[133]
+STR(N,S)                     convert number n to string s [70]
+                             Here is a way to convert a real number to
+                             dollars:
+                             procedure Convert_To_Dollars(y:real);
+                             begin
+                                  str(y:3:2,Dollars);
+                                  Dollars:='$' + Dollars;
+                             end;
+SUCC(SC)                     successor of scalar value (same typle[134]
+SWAP(I)                      i with upper,lower bytes swapped (integer)[137]
+TEXTMODE                     allows change of display modes [17, turbo tools]
+TRUNC(X)                     truncated value of x (integer)[135]
+TYPE                         see TYPE. and FILES.PAS
+UPCASE(C)                    c converted to uppercase (char)[137]
+
+     n:=length(LowCaseTitle);       {create upper case equiv to l.c. title}
+     UpperCaseTitle:='';
+     for i:=1 to n do begin
+         ch:=copy(LowCaseTitle,i,1);
+         chuc:=UpCase(ch);
+         UpperCaseTitle:= UpperCaseTitle + chuc;
+     end;
+
+VAL(S,N,P)                   convert string s to number n (error at p)[70]
+WHEREX                       gives x cursor positions; x:=WhereX
+WHEREY                       gives y cursor positions; y:=WhereY
+WHILE                        while (x>0) and (x<21) do begin
+                             may be used as follows:
+                             program while;
+                             var
+                                x          : array[1..10] of real;
+                                n          : integer;
+                             begin
+                                  writeln('Enter the seqence number in array');
+                                  readln(n);
+                                  while n in [1..10] do begin
+                                        writeln('Enter value of x[',n,']');
+                                        readln(x[n]);
+                                        n:=n + 1;
+                                  end;
+                             end.
+
+WINDOWS                      graphics [25 of turbo tools]
+WITH                         see 'record.pas' on Turbo Data II [81]
+WRITE(P1,...)                write items out to screen [109]
+WRITE(F,P1...)               write items out to file f [95] [109]
+WRITELN(P1,...)              as 'write' but starts new line at end [11]
+WRITELN(F,P1...)             ditto, but to file f (textfile only)[111]

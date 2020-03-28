@@ -1,0 +1,41 @@
+PROGRAM output_random_info; {4/29/88}
+        {This file is example of how to selectively read text
+        and data files from disk}
+VAR
+   Ytext            : array [1..20] of string[20];
+   ytextfile        : file of string[20];
+   textspec         : string[20];
+   dataspec         : string[20];
+   ydata            : array[1..20] of real;
+   ydatafile        : file of real;
+   n                : integer;
+
+BEGIN
+     clrscr;
+     writeln('Enter textspec');
+     readln(textspec);
+     assign(ytextfile, textspec);
+     reset(ytextfile);
+     writeln('Enter dataspec');
+     readln(dataspec);
+     assign(ydatafile, dataspec);
+     reset(ydatafile);
+     n:=1;
+     while (n>0) and (n<21) do begin
+     clrscr;
+     gotoxy(10,4); writeln('enter record number sought');
+     readln(n);
+     n:=n-1;                {sets record "1" to #0 which is
+                            first true record in file}
+     seek(ytextfile, n);
+     read(ytextfile, ytext[n]);
+     seek(ydatafile, n);
+     read(ydatafile, ydata[n]);
+     gotoxy(10,6); writeln;writeln('Name of variable is   ', ytext[n]);
+     gotoxy(10,8);writeln('Value of data =   ', ydata[n]);
+     end;
+     close(ytextfile);
+     close(ydatafile);
+
+END.
+

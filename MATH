@@ -1,0 +1,159 @@
+
+PROGRAM Math;    {5-29-89}
+
+(* Demo several math procedures *)
+
+VAR
+
+     x               : real;         {Independent variable; i.e., input}
+     y               : real;         {Dependent variable; i.e., unknown}
+     expon           : real;         {Exponent variable; i.e., input}
+     rad             : real;         {Convert degrees to radians}
+     trig            : real;         {Value of trig function in radians}
+     ch              : char;
+
+(* The following routines are "Procedures" which are called by commands from
+   below *)
+
+PROCEDURE NoGo;
+BEGIN
+     CLRSCR;
+     GOTOXY(25,12);WRITELN('INPUT VALUE OUT OF BOUNDS...');
+     GOTOXY(25,14);WRITELN('RESTART FOR ANOTHER RUN');
+HALT;
+END;
+
+PROCEDURE  sin(var x: real);
+BEGIN
+     trig:=rad * x;
+     y:=sin(trig);
+END;
+
+PROCEDURE cos(var x: real);
+BEGIN
+     IF x = 90 then y:=0 ELSE BEGIN
+        trig:=rad * x;
+        y:=cos(trig);
+     END;
+END;
+
+PROCEDURE tan(var x: real);
+BEGIN
+     IF x = 90 then BEGIN
+        CLRSCR;
+        GOTOXY(20,14);WRITELN('Tan(90 deg) = infinite');
+        delay(2000);
+        y := 1e24;    {very large number approximating infinity}
+     END
+     ELSE BEGIN
+        trig:=rad * x;
+        y:=sin(trig)/cos(trig);
+     END;
+END;
+
+PROCEDURE arctan(var x: real);
+BEGIN
+    y:=arctan(x);
+    y:=y/rad;          {convert y to degrees}
+END;
+
+PROCEDURE arcsin(var x: real);
+BEGIN
+   IF x > 1 then NoGo;
+   y:=sqr(x);
+   y:=1 - y;
+   y:=sqrt(y);
+   IF y = 0 then y:=90 ELSE BEGIN  {avoid singulariy}
+      y:=x/y;
+      y:=arctan(y);
+      y:=y/rad;
+   END;
+END;
+
+PROCEDURE arccos(var x: real);
+BEGIN
+   IF x>1 then NoGo;
+   y:=sqr(x);
+   y:=1 - y;
+   y:=sqrt(y);
+   IF x = 0 then y:= 90 ELSE BEGIN  {avoid singularity}
+      y:=y/x;
+      y:=arctan(y);
+      y:=y/rad;
+   END;
+END;
+
+PROCEDURE  log(var x: real);
+BEGIN
+       y:=ln(x)/ln(10);
+END;
+
+PROCEDURE invlog(var x: real);
+BEGIN
+       y:=exp(x) * exp(x * (ln(10)-1));
+END;
+
+PROCEDURE  ln(var x: real);
+BEGIN
+       y:=ln(x);
+END;
+
+PROCEDURE  exp(var x: real);
+BEGIN
+     y:=exp(x);
+END;
+
+PROCEDURE exponent(var x: real);    {y = x^expon}
+BEGIN
+    WRITE('Input exponent, expon, of y:   ');
+    READLN(expon);
+    y:=expon * ln(x);
+    y:=exp(y);
+END;
+
+
+BEGIN;  {Main body of code}
+
+      rad := pi/180; {set up constants & initial conditions}
+      y:=0;
+      expon:=0;
+
+      CLRSCR;  {clear screen}
+      WRITE('Enter value of input variable, "x" [degrees if trig function]:  ');
+      READLN(x);
+      WRITELN;
+      WRITELN('Choose type of math PROCEDURE:');
+      WRITELN('   "1" for sin(x)');
+      WRITELN('   "2" for cos(x)');
+      WRITELN('   "3" for tan(x)');
+      WRITELN('   "4" for arctan(x)');
+      WRITELN('   "5" for arcsin(x)');
+      WRITELN('   "6" for arccos(x)');
+      WRITELN('   "7" for log(x)');
+      WRITELN('   "8" for invlog(x)');
+      WRITELN('   "9" for y to the exponent, expon');
+      WRITELN('   "q" to quit');
+      WRITELN;
+
+      READ(kbd,ch);
+
+      IF ch = '1' then sin(x);
+      IF ch = '2' then cos(x);
+      IF ch = '3' then tan(x);
+      IF ch = '4' then arctan(x);
+      IF ch = '5' then arcsin(x);
+      IF ch = '6' then arccos(x);
+      IF ch = '7' then log(x);
+      IF ch = '8' then invlog(x);
+      IF ch = '9' then exponent(x);
+      IF ch = 'q' then HALT;
+
+      CLRSCR;
+      WRITELN;
+
+      GOTOXY(3,10);WRITELN('The input value, x, was:  ',x);
+      GOTOXY(3,12);WRITELN('The input exponent was:   ',expon,'; ["0" if not applicable]');
+      GOTOXY(3,14);WRITELN('The result, y, is:        ',y);
+
+END.
+

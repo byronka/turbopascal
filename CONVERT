@@ -1,0 +1,47 @@
+****************** INTERNATIONAL SYSTEM OF UNITS & CONVERSIONS ****************
+
+TO CONVERT FROM                TO                    MULTIPLY BY
+
+ampere-hr                      coulomb (C)           3.6e3
+angstrom                       metre (m)             1e-10
+atmosphere (standard)          pascal (Pa)           1.01325e5
+atmosphere (standard)          torr                  760.5839
+BTU (thermochem)               joule (J)             1.05435e3
+BTU (")/ft^2-hr                watt/metre^2 (W/m^2)  3.152481e0
+BTU (")/sec                    watt (W)              1.05435e3
+calorie (thermochem)           joule (J)             4.184e0
+calorie (")/sec                watt (W)              4.184e0
+centipoise                     pascal-sec (Pa-s)     1e-3
+centistoke                     metre^2/sec           1e-6
+coulomb                        ampere-sec            1e0
+degree Fahrenheit              degree Celsius (oC)   tC = (tF - 32)/1.8
+degree Fahrenheit              kelvin (k)            tK = (tF +459.67)/1.8
+dyne                           newton (N)            1e-5
+electron volt                  joule (J)             1.60219e-19
+erg                            joule (J)             1e-7
+fluid ounce (U.S.)             metre^3               2.957353e-5
+foot                           metre (m)             3.048e-1
+joule                          watt-sec              1e0
+foot-lb-force                  joule (J)             1.355818e0
+gallon (U.S. liquid)           metre^3               3.785412e-3
+gauss                          tesla (T)             1e-4
+horsepower (550 ft-lb/sec)     watt (W)              7.456999e2
+inch                           metre (m)             2.54e-2
+inch of mercury (60 oF)        pascal (P)            3.37685e3
+inch of water (60 oF)          pascal (P)            2.4884e2
+kilogram-force                 newton (N)            9.80665e0
+kilowatt-hour                  joule (J)             3.6e6
+mile (U.S. nautical)           metre (m)             1.852e3
+mile (U.S. statute)            metre (m)             1.609344e3
+ounce-mass (avoirdupois)       kilogram (kg)         2.834952e-2
+ounce (U.S. liquid)            metres^3              2.957353e-5
+pound-force/inch^2 (psi)       pascal (P)            6.894757e3
+pound-force                    newton (N)            4.4482219e0
+speed of light (c)             metres/sec            2.99796e8
+
+MASS/FORCE DEFINITIONS:
+
+1 dyne = force to accelerate 1 gram mass at 1 centimeter per sec^2
+1 newton = 10^5 dynes = force to accel 1 kg mass at 1 metre per sec^2
+1 lb force = force to accel 1 lb mass at 32.17 foot per sec^2
+1 poundal force = force to accel 1 lb mass to 1 foot per sec^2

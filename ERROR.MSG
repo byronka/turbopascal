@@ -1,0 +1,38 @@
+InitGraphic
+DefineWorld
+SelectWorld
+DefineWindow
+SelectWindow
+PointDrawn
+DrawStraight
+FindWorld
+RotatePolygonAbout
+TranslatePolygon
+ScalePolygon
+LoadScreen
+LoadWindow
+WindowSize
+ClearWindowStack
+StoreWindow
+RestoreWindow
+CopyWindow
+DrawPolygon
+DrawHistogram
+Spline
+LoadWindowStack
+RemoveHeader
+MoveVer
+MoveHor
+SaveWindow
+SaveWindowStack
+SaveScreen
+ERROR.MSG missing
+Font file missing
+Index out of range
+Coordinates out of range
+Too few array elements
+Error accessing file
+Out of window memory
+Value(s) out of range
+Program counter
+
